@@ -41,6 +41,10 @@ button.dk:hover{border-color:var(--lilac)}
 .dk.no{background:var(--coral);border-color:var(--coral);color:#1D2156;animation:shake .35s;cursor:default}.dk.no small{color:#1D2156}
 .dial-c{position:absolute;inset:33%;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--display);font-size:2.2rem;font-weight:700;color:var(--lilac)}
 .dial-c span{font-size:.8rem;font-family:var(--body);color:var(--soft);font-weight:800}.dial-c b{font-size:2rem;line-height:1}
+/* ✓ / ✗ badges so right and wrong never rely on color alone */
+.dk.ok::after,.dk.no::after{position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;
+ font:800 .8rem/1 var(--body);background:#1D2156;color:#fff;border:2px solid var(--surf)}
+.dk.ok::after{content:"✓"}.dk.no::after{content:"✗"}
 @keyframes pop{50%{scale:1.18}}@keyframes shake{25%{translate:-5px}75%{translate:5px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 /* path */
@@ -55,12 +59,9 @@ button.dk:hover{border-color:var(--lilac)}
 .map-start,.map-end{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;width:66px;font:600 .8rem var(--display);color:var(--soft)}
 .map-start span{font-size:1.5rem;line-height:1.2}
 .map-end{margin-left:calc(1*var(--step));font-size:2.2rem;line-height:1.2}
-.lm{position:absolute;top:50%;translate:0 -50%;font-size:1.9rem;opacity:.85;pointer-events:none}
-.lm.left{left:0}
-.lm.right{right:4%}
-.here{display:inline-block;margin-top:4px;font:800 .78rem var(--body);color:var(--ink);background:var(--sun);border-radius:999px;padding:2px 10px;width:max-content}
+.here{display:inline-block;margin-top:4px;font:800 .78rem var(--body);color:#1D2156;background:var(--sun);border-radius:999px;padding:2px 10px;width:max-content}
 .node.next .bub{border-color:var(--lilac);box-shadow:0 5px 0 var(--lilac)}
-@media (prefers-reduced-motion:no-preference){.node.next .bub{animation:beckon 2.4s ease-in-out infinite}}
+@media (prefers-reduced-motion:no-preference){.node.next .bub{animation:beckon 2.4s ease-in-out 3}}
 @keyframes beckon{50%{scale:1.07}}
 .node button{display:flex;align-items:center;gap:14px;text-align:left;width:100%;max-width:330px}
 .bub{flex:none;width:66px;height:66px;border-radius:50%;background:var(--surf);border:3px solid var(--edge);display:grid;place-items:center;font-size:1.8rem;box-shadow:0 5px 0 var(--line)}
@@ -101,7 +102,7 @@ button.dk:hover{border-color:var(--lilac)}
 .prompt{font-size:1.35rem;margin-top:4px}.prompt b{color:var(--lilac)}
 .quiz .seg.wide{margin-bottom:18px}
 .choices{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:22px 0}
-.dk.ch{position:static;transform:none;margin:0;width:auto;height:74px;border-radius:18px;font-size:1.5rem}
+.dk.ch{position:relative;left:auto;top:auto;transform:none;margin:0;width:auto;height:74px;border-radius:18px;font-size:1.5rem}
 .fb{min-height:54px;border-radius:16px;padding:0 4px}
 .fb.good,.fb.bad,.fb.info{padding:14px 16px}
 .fb.good{background:color-mix(in srgb,var(--mint) 16%,var(--surf));border:2px solid var(--mint)}
@@ -154,7 +155,8 @@ kbd{font:800 .85em var(--body);background:var(--surf);border:2px solid var(--edg
  .quiz>.fb{grid-area:fb}
  .quiz>.navrow{grid-area:nav;align-self:start}
  .quiz .dial{--s:380px;--r:calc(var(--s)/2 - 44px);margin:0 auto}
- .quiz .dk{width:72px;height:72px;margin:-36px;font-size:1.1rem}
+ .quiz .dial .dk{width:72px;height:72px;margin:-36px;font-size:1.1rem}
+ .dk.ch{height:88px;font-size:1.7rem}
  .choices{margin:0}
  .bar{max-width:none;margin-bottom:28px}
 }

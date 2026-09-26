@@ -186,15 +186,13 @@ function home(first){
   const next=LEVELS.findIndex((_,i)=>!S.stars[i]);
   LEVELS.forEach((L,i)=>{
     const open=true,st=S.stars[i]||0;
-    h+=`<li class="node ${open?'':'locked'} ${st?'done':''} ${i===next?'next':''}" style="--off:${[0,1,2,1][i%4]}">${LANDMARKS[i]||''}<button ${open?`onclick="startLevel(${i})"`:'disabled'}>
+    h+=`<li class="node ${open?'':'locked'} ${st?'done':''} ${i===next?'next':''}" style="--off:${[0,1,2,1][i%4]}"><button ${open?`onclick="startLevel(${i})"`:'disabled'}>
       <span class="bub" aria-hidden="true">${open?L.icon:'🔒'}</span><span class="nt"><small>Level ${i+1}</small><b>${L.title}</b><span class="st">${starsHTML(st)}</span>${i===next?`<span class="here"><span aria-hidden="true">📍</span> You are here</span>`:''}</span></button></li>`;
   });
   h+=`</ol><div class="map-end" aria-hidden="true">🏰</div></nav></div>`;
   app().innerHTML=h;settle('',!first);
   watchTrail();
 }
-/* Scenery beside the trail, on the side away from each level's swing. */
-const LANDMARKS={2:'<span class="lm left" aria-hidden="true">🌲</span>',4:'<span class="lm right" aria-hidden="true">⛰️</span>',6:'<span class="lm left" aria-hidden="true">🌳</span>'};
 /* Draw a smooth trail through the Start sign, every level bubble and the castle.
    Walked stretches are drawn solid gold; the rest stay dotted. */
 function drawTrail(){
@@ -257,7 +255,8 @@ function answerPad(Q){
 const kbdHint=Q=>Q.kind==='dial'&&Q.mode!=='name'?`<p class="kbd note" aria-hidden="true">Tip: press <kbd>0</kbd>–<kbd>6</kbd> to answer, or use the arrow keys.</p>`:'';
 /* Wrong answers stay focusable (aria-disabled, not disabled) so keyboard focus isn't lost. */
 function bindPad(fn){document.querySelectorAll('button.dk').forEach(b=>b.onclick=()=>{if(b.getAttribute('aria-disabled')!=='true')fn(+b.dataset.v,b);});}
-function markWrong(b){b.classList.add('no');b.setAttribute('aria-disabled','true');b.setAttribute('aria-label',b.getAttribute('aria-label')+' (wrong)');}
+const flag=(b,t)=>b.setAttribute('aria-label',`${b.getAttribute('aria-label')||b.textContent} (${t})`);
+function markWrong(b){b.classList.add('no');b.setAttribute('aria-disabled','true');flag(b,'wrong');}
 /* Tooltips: Escape hides one until the pointer or focus leaves; a tap elsewhere closes a tapped-open one. */
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.tip').forEach(t=>{t.classList.remove('open');t.dataset.hush=1;});});
 document.addEventListener('click',e=>document.querySelectorAll('.tip.open').forEach(t=>{if(!t.contains(e.target))t.classList.remove('open');}));
@@ -277,7 +276,7 @@ document.addEventListener('keydown',e=>{
 function answerQ(v,b){
   if(Q.done)return;const fb=$('#fb'),c=$('#dialC');
   if(v===Q.answer){
-    Q.done=true;b.classList.add('ok');b.setAttribute('aria-label',b.getAttribute('aria-label')+' (correct)');if(c)c.innerHTML='✓';
+    Q.done=true;b.classList.add('ok');flag(b,'correct');if(c)c.innerHTML='✓';
     if(!Q.missed){S.xp+=10;streak++;}else S.xp+=5;save();
     fb.className='fb good';fb.innerHTML=`<b>${pick(['Nailed it!','Yes!','Spot on!','You got it!'])}</b> ${Q.explain}`;
     $('#nx').hidden=false;$('#steps').hidden=true;$('#nx').focus();
@@ -291,7 +290,7 @@ function showSteps(){const fb=$('#fb');if(!Q.missed){Q.missed=true;mistakes++;st
 function finish(){
   const st=mistakes===0?3:mistakes<=2?2:1;S.stars[Li]=Math.max(S.stars[Li]||0,st);S.xp+=20;save();
   const more=Li<LEVELS.length-1;
-  app().innerHTML=topbar(true)+`<section class="card result"><div class="bigstars" aria-hidden="true">${'★'.repeat(st)}<span>${'★'.repeat(3-st)}</span></div>
+  app().innerHTML=topbar(true)+`<h1 class="sr">Level ${Li+1}: ${L.title}</h1><section class="card result"><div class="bigstars" aria-hidden="true">${'★'.repeat(st)}<span>${'★'.repeat(3-st)}</span></div>
   <h2 tabindex="-1" data-focus>${L.title}: complete. ${sr(`You earned ${st} of 3 stars.`)}</h2><p>${mistakes===0?'Perfect run — no slips at all.':`${mistakes} question${mistakes>1?'s':''} needed a hint. Replay for three stars.`}</p><p class="note">+20 bonus XP</p>
   <nav class="navrow"><button class="ghost" onclick="startLevel(${Li})">Replay</button>${more?`<button class="big" onclick="startLevel(${Li+1})">Next level</button>`:`<button class="big" onclick="practice()">Practice arena</button>`}</nav></section>`;
   settle(`${L.title}: complete`);
@@ -313,7 +312,7 @@ function pAnswer(v,b){
   if(v===PQ.ans){PQ.done=true;b.classList.add('ok');$('#dialC').innerHTML='✓';const s=Math.round((Date.now()-PT)/100)/10;
     let rec='';if(!PQ.missed){S.xp+=10;streak++;if(!S.bestTime||s<S.bestTime){S.bestTime=s;rec=' New best time!';}}save();
     fb.className='fb good';fb.innerHTML=`<b>${DAYS[v]} — correct in ${s}s.</b>${rec}`;
-    b.setAttribute('aria-label',b.getAttribute('aria-label')+' (correct)');refreshStats();$('#nd').focus();}
+    flag(b,'correct');refreshStats();$('#nd').focus();}
   else{PQ.missed=true;streak=0;markWrong(b);refreshStats();$('#dialC').innerHTML='✗';fb.className='fb bad';fb.innerHTML=`<b>Not ${DAYS[v]}.</b> Try again, or choose "Show me the steps".`;}
 }
 function pSteps(){PQ.missed=true;streak=0;refreshStats();const fb=$('#fb');fb.className='fb info';fb.innerHTML=`<b>Here's how:</b> ${fullExplain(PQ.y,PQ.m,PQ.d)}`;}
