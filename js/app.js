@@ -227,7 +227,7 @@ function homePanel(){
   <span class="tip-box" role="tooltip" id="ytip">${yearTricks(false)}</span></span>
   <div class="seg" role="group" aria-labelledby="ytl">${segBtns()}</div></div>
   <button class="link" id="rst" onclick="resetP(this)">Reset progress</button><p class="sr" id="rstMsg" aria-live="polite"></p></section>
-  <dialog class="sheet" id="ysheet" aria-labelledby="ysheet-t"><div class="sheet-grip" aria-hidden="true"></div>
+  <dialog class="sheet" id="ysheet" aria-labelledby="ysheet-t"><div class="sheet-grip" aria-hidden="true"></div><p class="sheet-hint" aria-hidden="true">Tap anywhere to close</p>
   <button class="sheet-x" aria-label="Close" onclick="this.closest('dialog').close()">✕</button>
   <h2 id="ysheet-t">How the year tricks differ</h2>${yearTricks(true)}
   <button class="big sheet-ok" onclick="this.closest('dialog').close()">Got it</button></dialog>`;
@@ -242,7 +242,7 @@ function yearTricks(sheet){
   return `${sheet?'<p>':''}Both tricks turn a year's last two digits into a hop from the century anchor.${sheet?'</p>':''}
   ${H('Odd + 11 — check odd, halve, check odd, sevens')}${OL(['Check odd: if it\'s odd, add 11.','Halve it (always, once).','Check odd again: if it\'s odd, add 11.','Take away 7s. Hop 7 minus the leftover.'])}
   ${EX('26 → even, leave it → halve: 13 → odd, add 11: 24 → leftover 3 → hop <b>4</b>')}
-  ${H('Twelves — fewer steps, bigger numbers')}${OL(['How many 12s? What\'s left?','How many 4s in what\'s left?','Add all three. Take away 7s. Hop that many.'])}
+  ${sheet?'<hr class="tip-sep">':'<span class="tip-sep" aria-hidden="true"></span>'}${H('Twelves — fewer steps, bigger numbers')}${OL(['How many 12s? What\'s left?','How many 4s in what\'s left?','Add all three. Take away 7s. Hop that many.'])}
   ${EX('26 → two 12s, 2 left, no 4s → 2 + 2 + 0 = hop <b>4</b>')}
   <${sheet?'p':'span'} class="tip-end">Same answer either way — pick the one you like.</${sheet?'p':'span'}>`;
 }
@@ -295,9 +295,8 @@ document.addEventListener('keydown',e=>{
   const p=[...document.querySelectorAll('[data-primary]')].find(b=>!b.hidden);
   if(p){e.preventDefault();p.click();}
 });
-/* Tapping the dimmed backdrop (outside the sheet's box) closes it. */
-document.addEventListener('click',e=>{const d=e.target;if(!(d instanceof HTMLDialogElement)||!d.open)return;
-  const r=d.getBoundingClientRect();if(e.clientY<r.top||e.clientY>r.bottom||e.clientX<r.left||e.clientX>r.right)d.close();});
+/* A tap anywhere closes the sheet: on the panel itself or on the dimmed backdrop (which also covers the ⓘ). */
+document.addEventListener('click',e=>{const d=e.target.closest&&e.target.closest('dialog.sheet');if(d&&d.open)d.close();});
 /* Open a tooltip upward when there isn't room for it below (e.g. the sticky desktop sidebar). */
 function placeTip(t){
   const set=t.closest('.set').getBoundingClientRect(),h=t.querySelector('.tip-box').offsetHeight+16;

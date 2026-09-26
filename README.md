@@ -49,4 +49,4 @@ The tests check the Doomsday shortcut against a Julian Day Number calculation fo
 ## Notes
 
 - The game switches from the Julian to the Gregorian calendar on October 15, 1582. Britain and its colonies switched later, in 1752.
-- Fonts (Fredoka, Nunito) load from Google Fonts. The game falls back to system fonts when offline.
+- Fonts (Plus Jakarta Sans, Inter) load from Google Fonts. The game falls back to system fonts when offline.
