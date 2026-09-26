@@ -238,7 +238,7 @@ function renderLevel(){
     const content=body==='@method'?`<p>Choose the one that feels easier. You can switch any time on the map.</p><div class="seg wide">${segBtns()}</div>`:body;
     app().innerHTML=topbar(true)+`<h1 class="sr">Level ${Li+1}: ${L.title}</h1><section class="card lesson" aria-labelledby="lt"><div class="dots" aria-hidden="true">${L.lessons.map((_,j)=>`<i class="${j===idx?'on':''}"></i>`).join('')}</div>
     <h2 id="lt" tabindex="-1" data-focus>${sr(`Lesson ${idx+1} of ${L.lessons.length}:`)} ${t}</h2>${content}</section><nav class="navrow">${idx?`<button class="ghost" onclick="idx--;renderLevel()">Back</button>`:'<span></span>'}
-    <button class="big" onclick="${last?"phase='quiz';idx=0;nextQ()":'idx++;renderLevel()'}">${last?"Let's play":'Next'}</button></nav>`;
+    <button class="big" data-primary onclick="${last?"phase='quiz';idx=0;nextQ()":'idx++;renderLevel()'}">${last?"Let's play":'Next'}</button></nav>`;
     settle(`${L.title}: ${t}`);return;
   }
 }
@@ -248,7 +248,7 @@ function nextQ(){
   const bar=`<div class="bar" role="progressbar" aria-label="Level progress" aria-valuemin="0" aria-valuemax="${L.count}" aria-valuenow="${idx}"><i style="width:${idx/L.count*100}%"></i></div>`;
   app().innerHTML=topbar(true)+bar+`<h1 class="sr">Level ${Li+1}: ${L.title}</h1><section class="quiz" aria-labelledby="qp"><small class="qn">Question ${idx+1} of ${L.count}</small><h2 class="prompt" id="qp" tabindex="-1" data-focus>${sr(`Question ${idx+1} of ${L.count}.`)} ${Q.prompt}</h2>
    ${answerPad(Q)}${kbdHint(Q)}<div id="fb" class="fb" aria-live="polite"></div>
-   <div class="navrow"><button class="ghost" id="steps" onclick="showSteps()">Show me the steps</button><button class="big" id="nx" hidden onclick="idx++;nextQ()">Next</button></div></section>`;
+   <div class="navrow"><button class="ghost" id="steps" onclick="showSteps()">Show me the steps</button><button class="big" id="nx" data-primary hidden onclick="idx++;nextQ()">Next</button></div></section>`;
   bindPad(answerQ);settle(`${L.title}: question ${idx+1}`);
 }
 function answerPad(Q){
@@ -260,6 +260,13 @@ const kbdHint=Q=>Q.kind==='dial'&&Q.mode!=='name'?`<p class="kbd note" aria-hidd
 function bindPad(fn){document.querySelectorAll('button.dk').forEach(b=>b.onclick=()=>{if(b.getAttribute('aria-disabled')!=='true')fn(+b.dataset.v,b);});}
 const flag=(b,t)=>b.setAttribute('aria-label',`${b.getAttribute('aria-label')||b.textContent} (${t})`);
 function markWrong(b){b.classList.add('no');b.setAttribute('aria-disabled','true');flag(b,'wrong');}
+/* Enter runs the screen's main action (Next, Next level, New date) unless focus is already on a control. */
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter'||e.repeat||e.ctrlKey||e.metaKey||e.altKey||e.shiftKey)return;
+  if(e.target.closest('button,a,input,select,textarea,[contenteditable]'))return;
+  const p=[...document.querySelectorAll('[data-primary]')].find(b=>!b.hidden);
+  if(p){e.preventDefault();p.click();}
+});
 /* Tooltips: Escape hides one until the pointer or focus leaves; a tap elsewhere closes a tapped-open one. */
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.tip').forEach(t=>{t.classList.remove('open');t.dataset.hush=1;});});
 document.addEventListener('click',e=>document.querySelectorAll('.tip.open').forEach(t=>{if(!t.contains(e.target))t.classList.remove('open');}));
@@ -294,8 +301,9 @@ function finish(){
   const st=mistakes===0?3:mistakes<=2?2:1;S.stars[Li]=Math.max(S.stars[Li]||0,st);S.xp+=20;save();
   const more=Li<LEVELS.length-1;
   app().innerHTML=topbar(true)+`<h1 class="sr">Level ${Li+1}: ${L.title}</h1><section class="card result"><div class="bigstars" aria-hidden="true">${'★'.repeat(st)}<span>${'★'.repeat(3-st)}</span></div>
-  <h2 tabindex="-1" data-focus>${L.title}: complete. ${sr(`You earned ${st} of 3 stars.`)}</h2><p>${mistakes===0?'Perfect run — no slips at all.':`${mistakes} question${mistakes>1?'s':''} needed a hint. Replay for three stars.`}</p><p class="note">+20 bonus XP</p>
-  <nav class="navrow"><button class="ghost" onclick="startLevel(${Li})">Replay</button>${more?`<button class="big" onclick="startLevel(${Li+1})">Next level</button>`:`<button class="big" onclick="practice()">Practice arena</button>`}</nav></section>`;
+  <h2 tabindex="-1" data-focus>${L.title}: complete${sr(`. You earned ${st} of 3 stars.`)}</h2><p>${mistakes===0?'Perfect run — no slips at all.':`${mistakes} question${mistakes>1?'s':''} needed a hint. Replay for three stars.`}</p><p class="note">+20 bonus XP</p>
+  <nav class="navrow"><button class="ghost" onclick="startLevel(${Li})">Replay</button>${more?`<button class="big" data-primary onclick="startLevel(${Li+1})">Next level</button>`:`<button class="big" data-primary onclick="practice()">Practice arena</button>`}</nav>
+  <p class="kbd note" aria-hidden="true">Press <kbd>Enter</kbd> for ${more?'the next level':'the practice arena'}.</p></section>`;
   settle(`${L.title}: complete`);
 }
 
@@ -307,7 +315,7 @@ function newPractice(){
   const [,a,b]=RANGES[PR];PQ=fresh(()=>{const t=randDate(a,b);t.answer=weekday(t.y,t.m,t.d);return t;});PQ.ans=PQ.answer;PQ.done=false;PQ.missed=false;PT=Date.now();
   app().innerHTML=topbar(true)+`<h1 class="sr">Practice arena</h1><section class="quiz practice" aria-labelledby="qp"><div class="seg wide" role="group" aria-label="Year range">${RANGES.map((r,i)=>`<button class="${i===PR?'on':''}" aria-pressed="${i===PR}" onclick="PR=${i};newPractice()">${r[0]}</button>`).join('')}</div>
   <h2 class="prompt" id="qp" tabindex="-1" data-focus>What day ${PQ.y<thisYear?'was':'is'} <b>${fmt(PQ)}</b>?</h2>${dialHTML('both')}${kbdHint({kind:'dial'})}<div id="fb" class="fb" aria-live="polite">${S.bestTime?`<span class="note">Best time: ${S.bestTime}s</span>`:''}</div>
-  <div class="navrow"><button class="ghost" id="steps" onclick="pSteps()">Show me the steps</button><button class="big" id="nd" onclick="newPractice()">New date</button></div></section>`;
+  <div class="navrow"><button class="ghost" id="steps" onclick="pSteps()">Show me the steps</button><button class="big" id="nd" data-primary onclick="newPractice()">New date</button></div></section>`;
   bindPad(pAnswer);settle('Practice arena');
 }
 function pAnswer(v,b){

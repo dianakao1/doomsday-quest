@@ -124,6 +124,7 @@ button.dk:hover{border-color:var(--lilac)}
 .tip[data-hush] .tip-box{visibility:hidden;opacity:0}
 kbd{font:800 .85em var(--body);background:var(--surf);border:2px solid var(--edge);border-bottom-width:3px;border-radius:6px;padding:0 6px}
 .kbd{display:none;text-align:center;margin:-4px 0 12px}
+.result .kbd{margin:16px 0 0}
 @media (hover:hover) and (pointer:fine){.kbd{display:block}}
 @media (forced-colors:active){.dk.ok,.dk.no,.seg button.on,.dial-c{forced-color-adjust:none}.dk{border:3px solid ButtonText}}
 
