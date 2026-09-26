@@ -42,8 +42,8 @@ function anchorExplain(c,cal){
   const a=anchor(c,cal);
   if(cal==='G'){
     if(c>=16&&c<=21)return `The ${c}00s anchor is <b>${DAYS[a]}</b>, straight from your anchor list.`;
-    const ref=[20,21,18,19][mod(c,4)];
-    return `The ${c}00s repeat the ${ref}00s (a multiple of 400 years apart): <b>${DAYS[a]}</b>.`;
+    const chain=[c];while(chain[chain.length-1]>21)chain.push(chain[chain.length-1]-4);const ref=chain[chain.length-1];
+    return `Take away 4s: ${chain.join(' → ')}. So the ${c}00s act like the ${ref}00s: <b>${DAYS[a]}</b>.`;
   }
   const r=c%7;return `Julian ${c}00s: ${c} ÷ 7 leaves <b>${r}</b>. Sunday, back ${r} → <b>${DAYS[a]}</b>.`;
 }
@@ -160,8 +160,12 @@ const LEVELS=[
 <div class="lp"><b>Wed</b><small>1900s · 2300s</small></div><div class="ar">←<small>−2</small></div><div class="lp"><b>Fri</b><small>1800s · 2200s</small></div></div>
 <p>Each step is 2 days back, except the one short step of 1.</p>`],
  ['Going back in time',`<p>Go round the loop the other way, and count <b>forward</b>.</p><div class="ex">2000s Tue <b>+1</b> → 1900s Wed<br>1900s Wed <b>+2</b> → 1800s Fri<br>1800s Fri <b>+2</b> → 1700s Sun</div><p class="note">Why the short step? 2000 was a leap year, but 1700, 1800 and 1900 weren't.</p>`],
- ['They repeat every 400 years',`<p>1600s = 2000s = 2400s = Tuesday.<br>1700s = 2100s = 2500s = Sunday.<br>So those four anchors cover every century from 1600 on.</p>`]],
- gen(){const c=rnd(16,25);return{prompt:`What's the anchor for the <b>${c}00s</b>?`,kind:'dial',mode:'both',answer:anchor(c,'G'),hint:`Four-century cycle: 2000s Tue, 2100s Sun, 2200s Fri, 2300s Wed, then it repeats.`,explain:anchorExplain(c,'G')};}},
+ ['They repeat every 400 years',`<p>Every 4 centuries the anchors come back around:</p><div class="ex">1600s = 2000s = 2400s = <b>Tuesday (2)</b><br>1700s = 2100s = 2500s = <b>Sunday (0)</b><br>1800s = 2200s = 2600s = <b>Friday (5)</b><br>1900s = 2300s = 2700s = <b>Wednesday (3)</b></div><p>So those four days cover every century from 1600 on.</p>`],
+ ['Far into the future',`<p>For any century, keep <b>taking away 4</b> until you reach one you know (1600s–2100s).</p><div class="ex"><ol class="steps">
+<li><b>Anchor for the 3400s:</b> 34 → 30 → 26 → 22 → 18, so the 3400s act like the 1800s → <b>Friday (5)</b></li>
+<li><b>Year 3407</b> (Odd + 11 on 07):<ul><li>7 is odd → add 11 → 18</li><li>Halve it → 9</li><li>9 is odd → add 11 → 20</li><li>Take away 7s → 6, and 7 − 6 = 1</li><li>Friday + 1 = <b>Saturday</b></li></ul></li>
+<li><b>July 4, 3407:</b> 7/4 isn't a doomsday date, but 7/11 is — 4 is 7 days before 11 → shrinks to 0 → <b>Saturday</b></li></ol></div><p class="note">This works as long as the calendar keeps today's leap-year rules.</p>`]],
+ gen(){const c=rnd(16,40);return{prompt:`What's the anchor for the <b>${c}00s</b>?`,kind:'dial',mode:'both',answer:anchor(c,'G'),hint:`Four-century cycle: 2000s Tue, 2100s Sun, 2200s Fri, 2300s Wed, then it repeats.`,explain:anchorExplain(c,'G')};}},
 
 {title:"The year's doomsday",icon:'🧮',count:6,lessons:[
  ['Three words to keep straight',`<p>You've met all three now. They sound alike, but each one covers a different stretch of time:</p>${wordsHTML()}<p class="note">You can find these again any time under <b>Key words</b> on the map.</p>`],
