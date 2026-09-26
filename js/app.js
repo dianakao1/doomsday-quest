@@ -7,6 +7,15 @@ let streak=0;
 const $=s=>document.querySelector(s);
 const app=()=>$('#app');
 const dayName=i=>DAYS[i];
+const sr=t=>`<span class="sr">${t}</span>`;
+const starsHTML=n=>`<span aria-hidden="true">${'★'.repeat(n)}${'☆'.repeat(3-n)}</span>${sr(`${n} of 3 stars`)}`;
+/* After each screen change: set the tab title, jump to the top and move focus to the
+   screen's heading so keyboard and screen-reader users start in the right place. */
+function settle(title,focus=true){
+  document.title=title?`${title} · Doomsday Quest`:'Doomsday Quest';
+  window.scrollTo(0,0);
+  const f=focus&&document.querySelector('[data-focus]');if(f)f.focus({preventScroll:true});
+}
 
 /* ---------- explanation helpers ---------- */
 function methodSteps(yy,method){
@@ -70,14 +79,17 @@ const fmt=({y,m,d})=>`${MONTHS[m-1]} ${d}, ${y}`;
 
 /* ---------- dial ---------- */
 function dialHTML(mode,o={}){
-  let h=`<div class="dial${o.static?' static':''}" role="group" aria-label="Days of the week">`;
+  /* The accessible name only says what the button shows, so it never gives the answer away. */
+  const name=i=>mode==='num'?`${i}`:mode==='name'?DAYS[i]:`${DAYS[i]}, ${i}`;
+  let h=o.static?`<div class="dial static" role="img" aria-label="${o.label||'Week dial: Sunday 0 to Saturday 6'}">`
+    :`<div class="dial" role="group" aria-label="${mode==='num'?'Day numbers':'Days of the week'}" data-mode="${mode}">`;
   for(let i=0;i<7;i++){
     const lab=mode==='num'?`<b>${i}</b>`:mode==='name'?`<b>${SHORT[i]}</b>`:`<b>${SHORT[i]}</b><small>${i}</small>`;
     const cls=['dk'];if(o.hi===i)cls.push('hi');if(o.mark===i)cls.push('mark');
-    h+=o.static?`<span class="${cls.join(' ')}" style="--a:${i*360/7}deg">${lab}</span>`
-      :`<button class="${cls.join(' ')}" data-v="${i}" style="--a:${i*360/7}deg" aria-label="${DAYS[i]}, ${i}">${lab}</button>`;
+    h+=o.static?`<span class="${cls.join(' ')}" style="--a:${i*360/7}deg" aria-hidden="true">${lab}</span>`
+      :`<button class="${cls.join(' ')}" data-v="${i}" style="--a:${i*360/7}deg" aria-label="${name(i)}${o.mark===i?' (start)':''}">${lab}</button>`;
   }
-  return h+`<div class="dial-c" id="dialC">${o.center??'?'}</div></div>`;
+  return h+`<div class="dial-c" id="dialC" aria-hidden="true">${o.center??'?'}</div></div>`;
 }
 
 /* ---------- levels ---------- */
@@ -89,7 +101,7 @@ const LEVELS=[
 {title:'Days are numbers',icon:'🔢',count:6,lessons:[
  ['Give every day a number',`<p>Here's the secret of the whole game: every day of the week gets a number, starting with Sunday as 0.</p>${chips()}`],
  ['Say the silly names',`<p>Read the small names out loud: <b>Noneday, Oneday, Twosday, Treblesday, Foursday, Fiveday, Six-a-day</b>. Each one sounds like its number, so you'll remember fast.</p>`],
- ['The days go round',`<p>After Saturday (6) comes Sunday (0) again. The week is a circle, just like this dial. You'll tap it to answer.</p>${dialHTML('both',{static:true,hi:new Date().getDay(),center:'↻'})}<p class="note">Today is ${DAYS[new Date().getDay()]}, so today is day ${new Date().getDay()}.</p>`]],
+ ['The days go round',`<p>After Saturday (6) comes Sunday (0) again. The week is a circle, just like this dial. You'll tap it to answer.</p>${dialHTML('both',{static:true,hi:new Date().getDay(),center:'↻',label:`Week dial going round from Sunday 0 to Saturday 6. Today, ${DAYS[new Date().getDay()]}, is highlighted.`})}<p class="note">Today is ${DAYS[new Date().getDay()]}, so today is day ${new Date().getDay()}.</p>`]],
  gen(){if(Math.random()<.5){const i=rnd(0,6);return{prompt:`What number is <b>${DAYS[i]}</b>?`,kind:'dial',mode:'num',answer:i,hint:`Sunday is 0. Count up from there. Its silly name helps: ${FUN[i]}.`,explain:`${DAYS[i]} is <b>${i}</b> — ${FUN[i]}.`};}
   const i=rnd(0,6);return{prompt:`Which day is number <b>${i}</b>?`,kind:'dial',mode:'name',answer:i,hint:`Start at Sunday = 0 and count ${i} step${i===1?'':'s'} around.`,explain:`Day ${i} is <b>${DAYS[i]}</b> (${FUN[i]}).`};}},
 
@@ -125,7 +137,7 @@ const LEVELS=[
  ['Every century has an anchor',`<p>Each century has a starting day called its <b>anchor</b>. Learn these four:</p><div class="ddtable four"><div><span>1800s</span><b>Friday</b></div><div><span>1900s</span><b>Wednesday</b></div><div><span>2000s</span><b>Tuesday</b></div><div><span>2100s</span><b>Sunday</b></div></div>`],
  ['Memory tricks',`<p><b>2000s → Tuesday:</b> Twos-day for the 2000s.<br><b>1900s → Wednesday:</b> "We-in-dis-day."</p><p>The four anchors in order are Tue, Sun, Fri, Wed, which as numbers are <b>2, 0, 5, 3</b>. Say it like a year: <b>"twenty fifty-three."</b></p>`],
  ['The anchor loop',`<p>The anchors go round a loop. Follow the arrows to go forward in time.</p>
-<div class="loop" aria-label="Anchor loop: Tuesday, Sunday, Friday, Wednesday, back to Tuesday">
+<div class="loop" role="img" aria-label="Anchor loop: Tuesday (1600s, 2000s), minus 2 to Sunday (1700s, 2100s), minus 2 to Friday (1800s, 2200s), minus 2 to Wednesday (1900s, 2300s), minus 1 back to Tuesday.">
 <div class="lp"><b>Tue</b><small>1600s · 2000s</small></div><div class="ar">→<small>−2</small></div><div class="lp"><b>Sun</b><small>1700s · 2100s</small></div>
 <div class="ar short">↑<small>−1</small></div><div></div><div class="ar">↓<small>−2</small></div>
 <div class="lp"><b>Wed</b><small>1900s · 2300s</small></div><div class="ar">←<small>−2</small></div><div class="lp"><b>Fri</b><small>1800s · 2200s</small></div></div>
@@ -157,26 +169,35 @@ const LEVELS=[
 /* ---------- screens ---------- */
 const totalStars=()=>Object.values(S.stars).reduce((a,b)=>a+b,0);
 function topbar(back){
-  return `<header class="top">${back?`<button class="ghost" onclick="home()" aria-label="Back to map">←&nbsp;Map</button>`:`<div class="brand">Doomsday Quest</div>`}
-  <div class="stats"><span title="Stars">⭐ ${totalStars()}</span><span title="XP">✨ ${S.xp}</span><span title="Streak">🔥 ${streak}</span></div></header>`;
+  return `<header class="top">${back?`<button class="ghost" onclick="home()"><span aria-hidden="true">←&nbsp;</span>Map</button>`:`<div class="brand">Doomsday Quest</div>`}
+  <div class="stats">${statsHTML()}</div></header>`;
 }
-function home(){
+function statsHTML(){
+  return [['⭐','Stars',totalStars()],['✨','XP',S.xp],['🔥','Streak',streak]]
+    .map(([e,l,v])=>`<span title="${l}"><span aria-hidden="true">${e}</span>${sr(l+':')} ${v}</span>`).join('');
+}
+function refreshStats(){document.querySelector('.stats').innerHTML=statsHTML();}
+function home(first){
   const t=new Date().getDay();
-  let h=topbar(false)+`<section class="hero">${dialHTML('both',{static:true,hi:t,center:`<span>today</span><b>${t}</b>`})}
-  <h1>Name the weekday of any date, in your head.</h1><p>Eight levels, from counting days to dates a thousand years ago.</p></section><ol class="path">`;
+  let h=topbar(false)+`<div class="home"><div class="home-side"><section class="hero">${dialHTML('both',{static:true,hi:t,center:`<span>today</span><b>${t}</b>`,label:`Week dial. Today is ${DAYS[t]}, day ${t}.`})}
+  <h1 tabindex="-1" data-focus>Name the weekday of any date, in your head.</h1><p>Eight levels, from counting days to dates a thousand years ago.</p></section>`+homePanel()+`</div>
+  <nav class="home-map" aria-label="Levels"><ol class="path">`;
   LEVELS.forEach((L,i)=>{
     const open=true,st=S.stars[i]||0;
     h+=`<li class="node ${open?'':'locked'} ${st?'done':''}" style="--off:${[0,1,0,-1][i%4]}"><button ${open?`onclick="startLevel(${i})"`:'disabled'}>
-      <span class="bub">${open?L.icon:'🔒'}</span><span class="nt"><small>Level ${i+1}</small><b>${L.title}</b><span class="st">${'★'.repeat(st)}${'☆'.repeat(3-st)}</span></span></button></li>`;
+      <span class="bub" aria-hidden="true">${open?L.icon:'🔒'}</span><span class="nt"><small>Level ${i+1}</small><b>${L.title}</b><span class="st">${starsHTML(st)}</span></span></button></li>`;
   });
-  h+=`</ol><section class="panel"><button class="big alt" onclick="practice()">Practice arena</button>
-  <div class="set"><span>Year trick</span><div class="seg">${segBtns()}</div></div>
-  <button class="link" id="rst" onclick="resetP(this)">Reset progress</button></section>`;
-  app().innerHTML=h;window.scrollTo(0,0);
+  h+=`</ol></nav></div>`;
+  app().innerHTML=h;settle('',!first);
 }
-function segBtns(){return [['odd11','Odd + 11'],['twelves','Twelves']].map(([k,l])=>`<button class="${S.method===k?'on':''}" onclick="setMethod('${k}',this)">${l}</button>`).join('');}
-function setMethod(k,el){S.method=k;save();const seg=el.closest('.seg');seg.innerHTML=segBtns();}
-function resetP(b){if(b.dataset.c){S={xp:0,stars:{},method:S.method,bestTime:null};streak=0;save();home();}else{b.dataset.c=1;b.textContent='Tap again to erase everything';}}
+function homePanel(){
+  return `<section class="panel" aria-label="Practice and settings"><button class="big alt" onclick="practice()">Practice arena</button>
+  <div class="set"><span id="ytl">Year trick</span><div class="seg" role="group" aria-labelledby="ytl">${segBtns()}</div></div>
+  <button class="link" id="rst" onclick="resetP(this)">Reset progress</button><p class="sr" id="rstMsg" aria-live="polite"></p></section>`;
+}
+function segBtns(){return [['odd11','Odd + 11'],['twelves','Twelves']].map(([k,l])=>`<button class="${S.method===k?'on':''}" aria-pressed="${S.method===k}" data-k="${k}" onclick="setMethod('${k}',this)">${l}</button>`).join('');}
+function setMethod(k,el){S.method=k;save();const seg=el.closest('.seg');seg.innerHTML=segBtns();seg.querySelector(`[data-k="${k}"]`).focus();}
+function resetP(b){if(b.dataset.c){S={xp:0,stars:{},method:S.method,bestTime:null};streak=0;save();home();}else{b.dataset.c=1;b.textContent='Tap again to erase everything';$('#rstMsg').textContent='Press again to erase all progress.';}}
 
 /* ---------- level flow ---------- */
 let L,Li,phase,idx,mistakes,Q;
@@ -187,46 +208,62 @@ function renderLevel(){
   if(phase==='learn'){
     const [t,body]=L.lessons[idx],last=idx===L.lessons.length-1;
     const content=body==='@method'?`<p>Choose the one that feels easier. You can switch any time on the map.</p><div class="seg wide">${segBtns()}</div>`:body;
-    app().innerHTML=topbar(true)+`<section class="card lesson"><div class="dots">${L.lessons.map((_,j)=>`<i class="${j===idx?'on':''}"></i>`).join('')}</div>
-    <h2>${t}</h2>${content}</section><nav class="navrow">${idx?`<button class="ghost" onclick="idx--;renderLevel()">Back</button>`:'<span></span>'}
+    app().innerHTML=topbar(true)+`<h1 class="sr">Level ${Li+1}: ${L.title}</h1><section class="card lesson" aria-labelledby="lt"><div class="dots" aria-hidden="true">${L.lessons.map((_,j)=>`<i class="${j===idx?'on':''}"></i>`).join('')}</div>
+    <h2 id="lt" tabindex="-1" data-focus>${sr(`Lesson ${idx+1} of ${L.lessons.length}:`)} ${t}</h2>${content}</section><nav class="navrow">${idx?`<button class="ghost" onclick="idx--;renderLevel()">Back</button>`:'<span></span>'}
     <button class="big" onclick="${last?"phase='quiz';idx=0;nextQ()":'idx++;renderLevel()'}">${last?"Let's play":'Next'}</button></nav>`;
-    window.scrollTo(0,0);return;
+    settle(`${L.title}: ${t}`);return;
   }
 }
 function nextQ(){
   if(idx>=L.count)return finish();
   Q=fresh(()=>L.gen(idx));Q.missed=false;Q.done=false;
-  const bar=`<div class="bar"><i style="width:${idx/L.count*100}%"></i></div>`;
-  app().innerHTML=topbar(true)+bar+`<section class="quiz"><small class="qn">Question ${idx+1} of ${L.count}</small><h2 class="prompt">${Q.prompt}</h2>
-   ${answerPad(Q)}<div id="fb" class="fb" aria-live="polite"></div>
+  const bar=`<div class="bar" role="progressbar" aria-label="Level progress" aria-valuemin="0" aria-valuemax="${L.count}" aria-valuenow="${idx}"><i style="width:${idx/L.count*100}%"></i></div>`;
+  app().innerHTML=topbar(true)+bar+`<h1 class="sr">Level ${Li+1}: ${L.title}</h1><section class="quiz" aria-labelledby="qp"><small class="qn">Question ${idx+1} of ${L.count}</small><h2 class="prompt" id="qp" tabindex="-1" data-focus>${sr(`Question ${idx+1} of ${L.count}.`)} ${Q.prompt}</h2>
+   ${answerPad(Q)}${kbdHint(Q)}<div id="fb" class="fb" aria-live="polite"></div>
    <div class="navrow"><button class="ghost" id="steps" onclick="showSteps()">Show me the steps</button><button class="big" id="nx" hidden onclick="idx++;nextQ()">Next</button></div></section>`;
-  bindPad(answerQ);window.scrollTo(0,0);
+  bindPad(answerQ);settle(`${L.title}: question ${idx+1}`);
 }
 function answerPad(Q){
   if(Q.kind==='dial')return dialHTML(Q.mode,{mark:Q.mark});
   return `<div class="choices">${Q.options.map(o=>`<button class="dk ch" data-v="${o.v}">${o.label}</button>`).join('')}</div>`;
 }
-function bindPad(fn){document.querySelectorAll('button.dk').forEach(b=>b.onclick=()=>fn(+b.dataset.v,b));}
+const kbdHint=Q=>Q.kind==='dial'&&Q.mode!=='name'?`<p class="kbd note" aria-hidden="true">Tip: press <kbd>0</kbd>–<kbd>6</kbd> to answer, or use the arrow keys.</p>`:'';
+/* Wrong answers stay focusable (aria-disabled, not disabled) so keyboard focus isn't lost. */
+function bindPad(fn){document.querySelectorAll('button.dk').forEach(b=>b.onclick=()=>{if(b.getAttribute('aria-disabled')!=='true')fn(+b.dataset.v,b);});}
+function markWrong(b){b.classList.add('no');b.setAttribute('aria-disabled','true');b.setAttribute('aria-label',b.getAttribute('aria-label')+' (wrong)');}
+document.addEventListener('keydown',e=>{
+  if(e.ctrlKey||e.metaKey||e.altKey)return;
+  const dial=document.querySelector('.dial[role="group"]');if(!dial)return;
+  const btns=[...dial.querySelectorAll('button.dk')],i=btns.indexOf(document.activeElement);
+  if(i>=0&&['ArrowRight','ArrowDown','ArrowLeft','ArrowUp'].includes(e.key)){
+    e.preventDefault();btns[mod(i+(e.key==='ArrowRight'||e.key==='ArrowDown'?1:-1),7)].focus();return;
+  }
+  /* Digit shortcuts, except when the question itself asks "which day is number N?" */
+  if(/^[0-6]$/.test(e.key)&&dial.dataset.mode!=='name'&&!/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)){
+    const b=btns[+e.key];b.focus();b.click();
+  }
+});
 function answerQ(v,b){
   if(Q.done)return;const fb=$('#fb'),c=$('#dialC');
   if(v===Q.answer){
-    Q.done=true;b.classList.add('ok');if(c)c.innerHTML='✓';
+    Q.done=true;b.classList.add('ok');b.setAttribute('aria-label',b.getAttribute('aria-label')+' (correct)');if(c)c.innerHTML='✓';
     if(!Q.missed){S.xp+=10;streak++;}else S.xp+=5;save();
     fb.className='fb good';fb.innerHTML=`<b>${pick(['Nailed it!','Yes!','Spot on!','You got it!'])}</b> ${Q.explain}`;
     $('#nx').hidden=false;$('#steps').hidden=true;$('#nx').focus();
-    document.querySelector('.stats').innerHTML=`<span>⭐ ${totalStars()}</span><span>✨ ${S.xp}</span><span>🔥 ${streak}</span>`;
+    refreshStats();
   }else{
-    if(!Q.missed)mistakes++;Q.missed=true;streak=0;b.classList.add('no');b.disabled=true;
+    if(!Q.missed)mistakes++;Q.missed=true;streak=0;markWrong(b);refreshStats();
     if(c)c.innerHTML='✗';fb.className='fb bad';fb.innerHTML=`<b>Not quite.</b> Hint: ${Q.hint}`;
   }
 }
-function showSteps(){const fb=$('#fb');if(!Q.missed){Q.missed=true;mistakes++;streak=0;}fb.className='fb info';fb.innerHTML=`<b>Here's how:</b> ${Q.explain}`;}
+function showSteps(){const fb=$('#fb');if(!Q.missed){Q.missed=true;mistakes++;streak=0;refreshStats();}fb.className='fb info';fb.innerHTML=`<b>Here's how:</b> ${Q.explain}`;}
 function finish(){
   const st=mistakes===0?3:mistakes<=2?2:1;S.stars[Li]=Math.max(S.stars[Li]||0,st);S.xp+=20;save();
   const more=Li<LEVELS.length-1;
-  app().innerHTML=topbar(true)+`<section class="card result"><div class="bigstars">${'★'.repeat(st)}<span>${'★'.repeat(3-st)}</span></div>
-  <h2>${L.title}: complete</h2><p>${mistakes===0?'Perfect run — no slips at all.':`${mistakes} question${mistakes>1?'s':''} needed a hint. Replay for three stars.`}</p><p class="note">+20 bonus XP</p>
+  app().innerHTML=topbar(true)+`<section class="card result"><div class="bigstars" aria-hidden="true">${'★'.repeat(st)}<span>${'★'.repeat(3-st)}</span></div>
+  <h2 tabindex="-1" data-focus>${L.title}: complete. ${sr(`You earned ${st} of 3 stars.`)}</h2><p>${mistakes===0?'Perfect run — no slips at all.':`${mistakes} question${mistakes>1?'s':''} needed a hint. Replay for three stars.`}</p><p class="note">+20 bonus XP</p>
   <nav class="navrow"><button class="ghost" onclick="startLevel(${Li})">Replay</button>${more?`<button class="big" onclick="startLevel(${Li+1})">Next level</button>`:`<button class="big" onclick="practice()">Practice arena</button>`}</nav></section>`;
+  settle(`${L.title}: complete`);
 }
 
 /* ---------- practice ---------- */
@@ -235,19 +272,19 @@ let PR=0,PT,PQ;
 function practice(){PR=Math.min(PR,2);newPractice();}
 function newPractice(){
   const [,a,b]=RANGES[PR];PQ=fresh(()=>{const t=randDate(a,b);t.answer=weekday(t.y,t.m,t.d);return t;});PQ.ans=PQ.answer;PQ.done=false;PQ.missed=false;PT=Date.now();
-  app().innerHTML=topbar(true)+`<section class="quiz"><div class="seg wide">${RANGES.map((r,i)=>`<button class="${i===PR?'on':''}" onclick="PR=${i};newPractice()">${r[0]}</button>`).join('')}</div>
-  <h2 class="prompt">What day ${PQ.y<thisYear?'was':'is'} <b>${fmt(PQ)}</b>?</h2>${dialHTML('both')}<div id="fb" class="fb" aria-live="polite">${S.bestTime?`<span class="note">Best time: ${S.bestTime}s</span>`:''}</div>
-  <div class="navrow"><button class="ghost" id="steps" onclick="pSteps()">Show me the steps</button><button class="big" onclick="newPractice()">New date</button></div></section>`;
-  bindPad(pAnswer);
+  app().innerHTML=topbar(true)+`<h1 class="sr">Practice arena</h1><section class="quiz practice" aria-labelledby="qp"><div class="seg wide" role="group" aria-label="Year range">${RANGES.map((r,i)=>`<button class="${i===PR?'on':''}" aria-pressed="${i===PR}" onclick="PR=${i};newPractice()">${r[0]}</button>`).join('')}</div>
+  <h2 class="prompt" id="qp" tabindex="-1" data-focus>What day ${PQ.y<thisYear?'was':'is'} <b>${fmt(PQ)}</b>?</h2>${dialHTML('both')}${kbdHint({kind:'dial'})}<div id="fb" class="fb" aria-live="polite">${S.bestTime?`<span class="note">Best time: ${S.bestTime}s</span>`:''}</div>
+  <div class="navrow"><button class="ghost" id="steps" onclick="pSteps()">Show me the steps</button><button class="big" id="nd" onclick="newPractice()">New date</button></div></section>`;
+  bindPad(pAnswer);settle('Practice arena');
 }
 function pAnswer(v,b){
   if(PQ.done)return;const fb=$('#fb');
   if(v===PQ.ans){PQ.done=true;b.classList.add('ok');$('#dialC').innerHTML='✓';const s=Math.round((Date.now()-PT)/100)/10;
     let rec='';if(!PQ.missed){S.xp+=10;streak++;if(!S.bestTime||s<S.bestTime){S.bestTime=s;rec=' New best time!';}}save();
     fb.className='fb good';fb.innerHTML=`<b>${DAYS[v]} — correct in ${s}s.</b>${rec}`;
-    document.querySelector('.stats').innerHTML=`<span>⭐ ${totalStars()}</span><span>✨ ${S.xp}</span><span>🔥 ${streak}</span>`;}
-  else{PQ.missed=true;streak=0;b.classList.add('no');b.disabled=true;$('#dialC').innerHTML='✗';fb.className='fb bad';fb.innerHTML=`<b>Not ${DAYS[v]}.</b> Try again, or tap "Show me the steps".`;}
+    b.setAttribute('aria-label',b.getAttribute('aria-label')+' (correct)');refreshStats();$('#nd').focus();}
+  else{PQ.missed=true;streak=0;markWrong(b);refreshStats();$('#dialC').innerHTML='✗';fb.className='fb bad';fb.innerHTML=`<b>Not ${DAYS[v]}.</b> Try again, or choose "Show me the steps".`;}
 }
-function pSteps(){PQ.missed=true;streak=0;const fb=$('#fb');fb.className='fb info';fb.innerHTML=`<b>Here's how:</b> ${fullExplain(PQ.y,PQ.m,PQ.d)}`;}
+function pSteps(){PQ.missed=true;streak=0;refreshStats();const fb=$('#fb');fb.className='fb info';fb.innerHTML=`<b>Here's how:</b> ${fullExplain(PQ.y,PQ.m,PQ.d)}`;}
 
-home();
+home(true);
