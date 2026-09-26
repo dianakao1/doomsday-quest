@@ -92,6 +92,8 @@ button.dk:hover{border-color:var(--lilac)}
 @media (min-width:420px){.ddtable.six{grid-template-columns:repeat(3,1fr)}}
 .ddtable div{background:var(--bg);border-radius:12px;padding:8px;text-align:center;display:flex;flex-direction:column}
 .ddtable span{color:var(--soft);font-weight:700;font-size:.85rem}.ddtable b{font-family:var(--display);font-weight:700;font-size:1.05rem}
+.ddtable b small{color:var(--lilac);font-size:.85em;white-space:nowrap}
+@media (max-width:419px){.ddtable.six b small{display:block}}
 .steps{padding-left:1.3em;margin:8px 0 0}.steps li{margin:6px 0}.steps ul{padding-left:1.1em;margin:4px 0;color:var(--soft)}
 .navrow{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:22px}
 .quiz .navrow .big{margin-left:auto}
