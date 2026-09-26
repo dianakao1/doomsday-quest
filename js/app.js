@@ -200,7 +200,10 @@ function drawTrail(){
   const svg=map.querySelector('.trail'),base=map.getBoundingClientRect();
   const c=el=>{const r=el.getBoundingClientRect();return [r.left+r.width/2-base.left,r.top+r.height/2-base.top];};
   const nodes=[...map.querySelectorAll('.node')];
-  const pts=[c(map.querySelector('.map-start span')),...nodes.map(n=>c(n.querySelector('.bub'))),c(map.querySelector('.map-end'))];
+  /* The trail leaves from just under the Start label and stops at the castle's edge, so it never runs through them. */
+  const st=map.querySelector('.map-start').getBoundingClientRect();
+  const en=map.querySelector('.map-end').getBoundingClientRect();
+  const pts=[[st.left+st.width/2-base.left,st.bottom-base.top+2],...nodes.map(n=>c(n.querySelector('.bub'))),[en.left+en.width/2-base.left,en.top-base.top+4]];
   /* A stretch counts as walked once the level it leads to is finished (the castle: once Level 8 is). */
   const lv=nodes.map(n=>n.classList.contains('done')),walked=[...lv,lv[lv.length-1]];
   svg.setAttribute('viewBox',`0 0 ${base.width} ${base.height}`);
