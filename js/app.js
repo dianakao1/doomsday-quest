@@ -41,7 +41,7 @@ function methodSteps(yy,method){
 function anchorExplain(c,cal){
   const a=anchor(c,cal);
   if(cal==='G'){
-    if(c>=18&&c<=21)return `The ${c}00s anchor is <b>${DAYS[a]}</b>, one of your four.`;
+    if(c>=16&&c<=21)return `The ${c}00s anchor is <b>${DAYS[a]}</b>, straight from your anchor list.`;
     const ref=[20,21,18,19][mod(c,4)];
     return `The ${c}00s repeat the ${ref}00s (a multiple of 400 years apart): <b>${DAYS[a]}</b>.`;
   }
@@ -151,7 +151,7 @@ const LEVELS=[
    hint:`${MONTHS[m-1]}'s doomsday date is ${m}/${dd}, and that's a ${DAYS[D]}. Now hop to ${d}.`,explain:hopText(dd,d,D)};}},
 
 {title:'Century anchors',icon:'⚓',count:5,lessons:[
- ['Every century has an anchor',`<p>Each century has a starting day called its <b>anchor</b>. Learn these four:</p><div class="ddtable four"><div><span>1800s</span><b>Friday</b></div><div><span>1900s</span><b>Wednesday</b></div><div><span>2000s</span><b>Tuesday</b></div><div><span>2100s</span><b>Sunday</b></div></div>`],
+ ['Every century has an anchor',`<p>Each century has a starting day called its <b>anchor</b>. Here they are from 1600 on:</p><div class="ddtable six"><div><span>1600s</span><b>Tuesday</b></div><div><span>1700s</span><b>Sunday</b></div><div><span>1800s</span><b>Friday</b></div><div><span>1900s</span><b>Wednesday</b></div><div><span>2000s</span><b>Tuesday</b></div><div><span>2100s</span><b>Sunday</b></div></div><p>Notice the pattern: only four days — <b>Tuesday, Sunday, Friday, Wednesday</b> — and then they repeat.</p>`],
  ['Memory tricks',`<p><b>2000s → Tuesday:</b> Twos-day for the 2000s.<br><b>1900s → Wednesday:</b> "We-in-dis-day."</p><p>The four anchors in order are Tue, Sun, Fri, Wed, which as numbers are <b>2, 0, 5, 3</b>. Say it like a year: <b>"twenty fifty-three."</b></p>`],
  ['The anchor loop',`<p>The anchors go round a loop. Follow the arrows to go forward in time.</p>
 <div class="loop" role="img" aria-label="Anchor loop: Tuesday (1600s, 2000s), minus 2 to Sunday (1700s, 2100s), minus 2 to Friday (1800s, 2200s), minus 2 to Wednesday (1900s, 2300s), minus 1 back to Tuesday.">
