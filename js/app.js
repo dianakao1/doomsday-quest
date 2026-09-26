@@ -192,7 +192,9 @@ function home(first){
 }
 function homePanel(){
   return `<section class="panel" aria-label="Practice and settings"><button class="big alt" onclick="practice()">Practice arena</button>
-  <div class="set"><span id="ytl">Year trick</span><div class="seg" role="group" aria-labelledby="ytl">${segBtns()}</div></div>
+  <div class="set"><span id="ytl">Year trick</span><span class="tip"><button class="tip-btn" aria-label="How the year tricks differ" aria-describedby="ytip" onclick="this.parentNode.classList.toggle('open')">i</button>
+  <span class="tip-box" role="tooltip" id="ytip"><b>Odd + 11:</b> if the last two digits are odd, add 11. Halve it. If that's odd, add 11 again. Take away 7s, then hop forward 7 minus the leftover. The numbers stay small, so it's easy to do in your head.<br><br><b>Twelves:</b> count the 12s in the last two digits, the leftover, and the 4s in that leftover. Add all three, then take away 7s. There are fewer steps, but you divide by 12.<br><br>Both give the same answer, so pick the one you like.</span></span>
+  <div class="seg" role="group" aria-labelledby="ytl">${segBtns()}</div></div>
   <button class="link" id="rst" onclick="resetP(this)">Reset progress</button><p class="sr" id="rstMsg" aria-live="polite"></p></section>`;
 }
 function segBtns(){return [['odd11','Odd + 11'],['twelves','Twelves']].map(([k,l])=>`<button class="${S.method===k?'on':''}" aria-pressed="${S.method===k}" data-k="${k}" onclick="setMethod('${k}',this)">${l}</button>`).join('');}
@@ -231,6 +233,10 @@ const kbdHint=Q=>Q.kind==='dial'&&Q.mode!=='name'?`<p class="kbd note" aria-hidd
 /* Wrong answers stay focusable (aria-disabled, not disabled) so keyboard focus isn't lost. */
 function bindPad(fn){document.querySelectorAll('button.dk').forEach(b=>b.onclick=()=>{if(b.getAttribute('aria-disabled')!=='true')fn(+b.dataset.v,b);});}
 function markWrong(b){b.classList.add('no');b.setAttribute('aria-disabled','true');b.setAttribute('aria-label',b.getAttribute('aria-label')+' (wrong)');}
+/* Tooltips: Escape hides one until the pointer or focus leaves; a tap elsewhere closes a tapped-open one. */
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.tip').forEach(t=>{t.classList.remove('open');t.dataset.hush=1;});});
+document.addEventListener('click',e=>document.querySelectorAll('.tip.open').forEach(t=>{if(!t.contains(e.target))t.classList.remove('open');}));
+['mouseout','focusout'].forEach(ev=>document.addEventListener(ev,e=>{const t=e.target.closest&&e.target.closest('.tip');if(t&&!t.contains(e.relatedTarget))delete t.dataset.hush;}));
 document.addEventListener('keydown',e=>{
   if(e.ctrlKey||e.metaKey||e.altKey)return;
   const dial=document.querySelector('.dial[role="group"]');if(!dial)return;
