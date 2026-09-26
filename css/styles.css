@@ -92,6 +92,7 @@ button.dk:hover{border-color:var(--lilac)}
 .ddtable span{color:var(--soft);font-weight:800;font-size:.85rem}.ddtable b{font-family:var(--display);font-weight:600;font-size:1.05rem}
 .steps{padding-left:1.3em;margin:8px 0 0}.steps li{margin:6px 0}.steps ul{padding-left:1.1em;margin:4px 0;color:var(--soft)}
 .navrow{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:22px}
+.quiz .navrow .big{margin-left:auto}
 .loop{display:grid;grid-template-columns:1fr 42px 1fr;align-items:center;justify-items:center;gap:6px;margin:14px 0}
 .lp{width:100%;background:var(--bg);border:2px solid var(--line);border-radius:16px;padding:8px 4px;text-align:center;display:flex;flex-direction:column}
 .lp b{font-family:var(--display);font-weight:600;font-size:1.3rem}.lp small{color:var(--soft);font-weight:800;font-size:.75rem}
