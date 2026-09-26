@@ -98,6 +98,22 @@ const thisYear=new Date().getFullYear(),tyDD=yearDD(thisYear,'G');
 const chips=()=>`<div class="chips">${DAYS.map((d,i)=>`<div class="chip"><b>${i}</b><span>${d}</span><small>${FUN[i]}</small></div>`).join('')}</div>`;
 const ddTable=()=>`<div class="ddtable">${MONTHS.map((mn,i)=>`<div><span>${mn.slice(0,3)}</span><b>${i+1}/${[ '3 or 4','28 or 29',14,4,9,6,11,8,5,10,7,12][i]}</b></div>`).join('')}</div>`;
 
+/* Anchor vs doomsday vs doomsday dates: one weekday per century, one per year, and the dates that land on it. */
+const WORDS=[
+  ['Anchor','One weekday for a <b>whole century</b>.','1900s → Wednesday · 2000s → Tuesday'],
+  ['Doomsday','One weekday for a <b>whole year</b>. Start at the anchor and hop.','1969 → Friday · 2026 → Saturday'],
+  ['Doomsday dates','The dates in each month that <b>always land on</b> the year\'s doomsday.','4/4 · 6/6 · 7/11 · 3/14']];
+const wordsHTML=()=>`<dl class="words">${WORDS.map(([w,d,e])=>`<div><dt>${w}</dt><dd>${d}<span class="words-ex">${e}</span></dd></div>`).join('')}</dl>
+  <p class="note">Put together: <b>anchor</b> → the year's <b>doomsday</b> → the month's <b>doomsday date</b> → hop to your date.</p>`;
+
+const STEPS=[
+  ['Which calendar?','Gregorian from Oct 15, 1582; Julian before that.'],
+  ['Century anchor','The weekday for the century — 1900s Wednesday, 2000s Tuesday.'],
+  ["The year's doomsday",'Start at the anchor and hop, using Odd + 11 or Twelves on the last two digits.'],
+  ["The month's doomsday date",'A date in that month that always lands on the doomsday — 4/4, 6/6, 7/11, 3/14.'],
+  ['Hop to your date','Count forward or back from that date, taking away 7s to keep the hop small.']];
+const STEPS_HTML=`<ol class="steps">${STEPS.map(([t,d])=>`<li><b>${t}</b><br>${d}</li>`).join('')}</ol>`;
+
 const LEVELS=[
 {title:'Days are numbers',icon:'🔢',count:6,lessons:[
  ['Give every day a number',`<p>Here's the secret of the whole game: every day of the week gets a number, starting with Sunday as 0.</p>${chips()}`],
@@ -148,6 +164,7 @@ const LEVELS=[
  gen(){const c=rnd(16,25);return{prompt:`What's the anchor for the <b>${c}00s</b>?`,kind:'dial',mode:'both',answer:anchor(c,'G'),hint:`Four-century cycle: 2000s Tue, 2100s Sun, 2200s Fri, 2300s Wed, then it repeats.`,explain:anchorExplain(c,'G')};}},
 
 {title:"The year's doomsday",icon:'🧮',count:6,lessons:[
+ ['Three words to keep straight',`<p>You've met all three now. They sound alike, but each one covers a different stretch of time:</p>${wordsHTML()}<p class="note">You can find these again any time under <b>Key words</b> on the map.</p>`],
  ['Split the year',`<p>Break a year into two parts: <b>19</b>|<b>87</b>. The first part gives the century anchor (1900s → Wednesday). The last two digits tell you how far to hop from it.</p>`],
  ['Way 1: Odd + 11',`<p>It's always the same four moves: <b>check odd, halve, check odd, sevens</b>.</p>
 <ol class="steps"><li><b>Check odd:</b> if it's odd, add 11.</li><li><b>Halve</b> it — always, just once.</li><li><b>Check odd</b> again: if it's odd, add 11.</li><li><b>Sevens:</b> take away 7s. Hop forward 7 minus the leftover.</li></ol>
@@ -166,7 +183,14 @@ const LEVELS=[
   const t=randDate(200,1581);return{prompt:`What day was <b>${fmt(t)}</b>?`,kind:'dial',mode:'both',answer:weekday(t.y,t.m,t.d),hint:`Julian calendar. Start with the anchor: ${Math.floor(t.y/100)} ÷ 7 leaves ${Math.floor(t.y/100)%7}.`,explain:fullExplain(t.y,t.m,t.d)};}},
 
 {title:'Grand master',icon:'👑',count:8,lessons:[
- ['Put it all together',`<ol class="steps"><li>Which calendar? After Oct 15, 1582 it's the modern one.</li><li>Find the century anchor.</li><li>Hop to the year's doomsday.</li><li>Find the month's doomsday date.</li><li>Hop to your date.</li></ol><p>Any year in history. "Show me the steps" is always there if you get stuck.</p>`]],
+ ['Put it all together',`<p>Every date uses the same five steps. Each one gives you the starting point for the next:</p>${STEPS_HTML}<p>Any year in history. "Show me the steps" is always there if you get stuck.</p>`],
+ ['Worked example: the Moon landing',`<p>What day was <b>July 20, 1969</b>?</p><div class="ex"><ol class="steps">
+<li><b>Calendar:</b> after 1582 → Gregorian</li>
+<li><b>Anchor:</b> 1900s → <b>Wednesday</b></li>
+<li><b>Year's doomsday</b> (Odd + 11 on 69):<ul><li>69 is odd → add 11 → 80</li><li>Halve it → 40</li><li>40 is even → leave it</li><li>Take away 7s → 5, and 7 − 5 = 2</li><li>Wednesday + 2 = <b>Friday</b></li></ul></li>
+<li><b>Doomsday date:</b> July → <b>7/11</b>, so July 11, 1969 was a Friday</li>
+<li><b>Hop:</b> 20 is 9 days after 11 → 9 shrinks to 2 → Friday + 2 = <b>Sunday</b></li></ol></div>`],
+ ['A shortcut for this year',`<p>People who practise this memorise the current year's doomsday. For ${thisYear} it's <b>${DAYS[tyDD]}</b>.</p><p>For any date this year, skip straight to steps 4 and 5: find the month's doomsday date, then hop.</p><div class="ex">${thisYear}'s doomsday is ${DAYS[tyDD]}. What day is December 25?<br>12/12 is a ${DAYS[tyDD]}. 25 is 13 days after 12 → 13 shrinks to 6<br>${DAYS[tyDD]} + 6 = <b>${DAYS[mod(tyDD+6,7)]}</b></div><p class="note">The full five steps are only needed for other years.</p>`]],
  gen(i){const r=i<3?[1900,2099]:i<6?[1583,2999]:[1,1581],t=randDate(...r);
   return{prompt:`What day ${t.y<thisYear?'was':'is'} <b>${fmt(t)}</b>?`,kind:'dial',mode:'both',answer:weekday(t.y,t.m,t.d),hint:`Start with the ${Math.floor(t.y/100)}00s anchor${calOf(t.y,t.m,t.d)==='J'?' (Julian calendar)':''}.`,explain:fullExplain(t.y,t.m,t.d)};}}
 ];
@@ -226,12 +250,21 @@ function homePanel(){
   <div class="set"><span id="ytl">Year trick</span><span class="tip"><button class="tip-btn" aria-label="How the year tricks differ" aria-describedby="ytip" aria-haspopup="dialog" onclick="openTricks(this)">i</button>
   <span class="tip-box" role="tooltip" id="ytip">${yearTricks(false)}</span></span>
   <div class="seg" role="group" aria-labelledby="ytl">${segBtns()}</div></div>
-  <button class="link" id="rst" onclick="resetP(this)">Reset progress</button><p class="sr" id="rstMsg" aria-live="polite"></p></section>
-  <dialog class="sheet" id="ysheet" aria-labelledby="ysheet-t"><div class="sheet-grip" aria-hidden="true"></div><p class="sheet-hint" aria-hidden="true">Tap anywhere to close</p>
+  <div class="links"><button class="link" aria-haspopup="dialog" onclick="openSheet('wsheet',this)">Key words</button>
+  <button class="link" id="rst" onclick="resetP(this)">Reset progress</button></div><p class="sr" id="rstMsg" aria-live="polite"></p></section>
+  ${sheetHTML('ysheet','How the year tricks differ',yearTricks(true))}
+  ${sheetHTML('wsheet','Key words',`<p>Three words that sound alike but work at different sizes:</p>${wordsHTML()}<hr class="tip-sep"><h3 class="tip-h">The five steps, in order</h3>${STEPS_HTML}`)}`;
+}
+/* A modal panel that slides up from the bottom. Any tap or click on it (or its backdrop) closes it. */
+function sheetHTML(id,title,body){
+  return `<dialog class="sheet" id="${id}" aria-labelledby="${id}-t"><div class="sheet-grip" aria-hidden="true"></div>
+  <p class="sheet-hint" aria-hidden="true"><span class="touch-only">Tap</span><span class="mouse-only">Click</span> anywhere to close</p>
   <button class="sheet-x" aria-label="Close" onclick="this.closest('dialog').close()">✕</button>
-  <h2 id="ysheet-t">How the year tricks differ</h2>${yearTricks(true)}
+  <h2 id="${id}-t">${title}</h2>${body}
   <button class="big sheet-ok" onclick="this.closest('dialog').close()">Got it</button></dialog>`;
 }
+function openSheet(id,btn){const d=$('#'+id);d.onclose=()=>btn.focus();d.showModal();}
+
 /* Explanation of the two year tricks. The sheet gets real headings and lists;
    the tooltip gets plain spans because a tooltip is read out as flat text. */
 function yearTricks(sheet){
@@ -249,7 +282,7 @@ function yearTricks(sheet){
 /* Mouse users get the hover tooltip; touch screens get a bottom sheet dialog instead. */
 function openTricks(btn){
   if(matchMedia('(hover:hover) and (pointer:fine)').matches){btn.parentNode.classList.toggle('open');return;}
-  const d=$('#ysheet');d.onclose=()=>btn.focus();d.showModal();
+  openSheet('ysheet',btn);
 }
 function segBtns(){return [['odd11','Odd + 11'],['twelves','Twelves']].map(([k,l])=>`<button class="${S.method===k?'on':''}" aria-pressed="${S.method===k}" data-k="${k}" onclick="setMethod('${k}',this)">${l}</button>`).join('');}
 function setMethod(k,el){S.method=k;save();const seg=el.closest('.seg');seg.innerHTML=segBtns();seg.querySelector(`[data-k="${k}"]`).focus();}

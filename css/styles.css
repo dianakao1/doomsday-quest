@@ -122,7 +122,7 @@ button.dk:hover{border-color:var(--lilac)}
 .sheet[open]{animation:sheet-in .28s cubic-bezier(.2,.8,.2,1)}
 .sheet[open]::backdrop{animation:fade-in .28s}
 @keyframes sheet-in{from{transform:translateY(100%)}}@keyframes fade-in{from{opacity:0}}
-.sheet{cursor:pointer}
+.sheet{cursor:pointer;text-align:left}
 .sheet-grip{width:44px;height:5px;border-radius:3px;background:var(--edge);margin:0 auto 4px}
 .sheet-hint{margin:0 0 6px;text-align:center;font-size:.78rem;font-weight:600;color:var(--soft)}
 .sheet h2{font-size:1.3rem;margin:4px 44px 6px 0}
@@ -133,6 +133,15 @@ button.dk:hover{border-color:var(--lilac)}
 .sheet .tip-ex{font-size:.92rem;padding:8px 12px;margin:8px 0 0}
 .sheet .tip-end{margin:16px 0 0}
 .sheet-ok{width:100%;margin-top:18px}
+.links{display:flex;gap:6px 18px;flex-wrap:wrap;justify-content:center}
+.mouse-only{display:none}
+@media (hover:hover) and (pointer:fine){.mouse-only{display:inline}.touch-only{display:none}}
+/* key words */
+.words{margin:12px 0;display:grid;gap:10px}
+.words div{background:var(--bg);border-radius:14px;padding:12px 14px;border-left:5px solid var(--lilac)}
+.words dt{font-family:var(--display);font-weight:700;font-size:1.08rem}
+.words dd{margin:2px 0 0}
+.words-ex{display:block;margin-top:4px;font-size:.9rem;font-weight:600;color:var(--soft)}
 /* info tooltip */
 .tip-btn{position:relative;width:26px;height:26px;border-radius:50%;border:2px solid var(--edge);font:700 .85rem/1 var(--display);color:var(--soft);display:grid;place-items:center;margin-left:-4px}
 .tip-btn:hover,.tip.open .tip-btn{border-color:var(--lilac);color:var(--lilac)}
