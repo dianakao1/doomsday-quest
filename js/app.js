@@ -116,8 +116,8 @@ const LEVELS=[
 
 {title:'Doomsday dates',icon:'📅',count:6,lessons:[
  ['Some dates always match',`<p>Every year, a set of dates all land on the same weekday. That weekday is called the year's <b>doomsday</b>.</p><div class="ex">In ${thisYear}, 4/4, 6/6, 8/8, 10/10 and 12/12 are all <b>${DAYS[tyDD]}s</b>.</div>`],
- ['Even months: doubles',`<p>For even months, the month and day are the same number.</p><div class="ex big">4/4 &nbsp; 6/6 &nbsp; 8/8 &nbsp; 10/10 &nbsp; 12/12</div>`],
- ['Odd months: 9-to-5 at the 7-Eleven',`<p>Say it: <b>"I work 9 to 5 at the 7-Eleven."</b></p><div class="ex big">5/9 &nbsp; 9/5 &nbsp; 7/11 &nbsp; 11/7</div><p>It works both ways round.</p>`],
+ ['Even months: doubles',`<p>For even months, the month and day are the same number.</p><div class="ex dates">4/4 &nbsp; 6/6 &nbsp; 8/8 &nbsp; 10/10 &nbsp; 12/12<small>Example: in ${thisYear}, April 4, June 6 and December 12 are all ${DAYS[tyDD]}s.</small></div>`],
+ ['Odd months: 9-to-5 at the 7-Eleven',`<p>Say it: <b>"I work 9 to 5 at the 7-Eleven."</b></p><div class="ex dates">5/9 &nbsp; 9/5 &nbsp; 7/11 &nbsp; 11/7<small>Example: in ${thisYear}, May 9 (5/9) and September 5 (9/5) are both ${DAYS[tyDD]}s.</small></div><p>It works both ways round.</p>`],
  ['The tricky three',`<p><b>March:</b> 3/14, Pi Day.<br><b>February:</b> the last day — 28, or 29 in a leap year.<br><b>January:</b> the 3rd — or the 4th in a leap year. Three years out of four it's the 3rd; the fourth year it's the 4th.</p>`],
  ['All twelve',`${ddTable()}<p class="note">Leap years: January 4 and February 29.</p>`]],
  gen(){const m=rnd(1,12),leap=m<=2?Math.random()<.5:false,ans=ddDate(m,leap);
