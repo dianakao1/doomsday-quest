@@ -1,0 +1,253 @@
+/* ---------- state ---------- */
+const KEY='doomsday-quest-v1';
+let S={xp:0,stars:{},method:'odd11',bestTime:null};
+try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s)S=Object.assign(S,s);}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+let streak=0;
+const $=s=>document.querySelector(s);
+const app=()=>$('#app');
+const dayName=i=>DAYS[i];
+
+/* ---------- explanation helpers ---------- */
+function methodSteps(yy,method){
+  const st=[];
+  if(method==='odd11'){
+    let t=yy; st.push(`Start with <b>${yy}</b>.`);
+    if(t%2){st.push(`${t} is odd, so add 11 → <b>${t+11}</b>.`);t+=11;}
+    st.push(`Halve it → <b>${t/2}</b>.`);t/=2;
+    if(t%2){st.push(`${t} is odd, so add 11 → <b>${t+11}</b>.`);t+=11;}
+    const r=t%7,h=(7-r)%7;
+    st.push(`Take away 7s from ${t}: leftover <b>${r}</b>.`);
+    st.push(r===0?`Leftover 0 means no hop: stay on the anchor.`:`7 − ${r} = <b>${h}</b>. Hop forward ${h} from the anchor.`);
+    return {steps:st,hop:h};
+  }
+  const a=Math.floor(yy/12),b=yy%12,c=Math.floor(b/4),s=a+b+c,h=s%7;
+  st.push(`How many 12s fit in ${yy}? <b>${a}</b>.`);
+  st.push(`What's left over? <b>${b}</b>.`);
+  st.push(`How many 4s fit in ${b}? <b>${c}</b>.`);
+  st.push(`Add them: ${a} + ${b} + ${c} = <b>${s}</b>. Take away 7s → <b>${h}</b>. Hop forward ${h} from the anchor.`);
+  return {steps:st,hop:h};
+}
+function anchorExplain(c,cal){
+  const a=anchor(c,cal);
+  if(cal==='G'){
+    if(c>=18&&c<=21)return `The ${c}00s anchor is <b>${DAYS[a]}</b>, one of your four.`;
+    const ref=[20,21,18,19][mod(c,4)];
+    return `The ${c}00s repeat the ${ref}00s (a multiple of 400 years apart): <b>${DAYS[a]}</b>.`;
+  }
+  const r=c%7;return `Julian ${c}00s: ${c} ÷ 7 leaves <b>${r}</b>. Sunday, back ${r} → <b>${DAYS[a]}</b>.`;
+}
+function yearExplain(y,cal,method){
+  const c=Math.floor(y/100),yy=y%100,a=anchor(c,cal),m=methodSteps(yy,method);
+  const out=[`Century anchor: ${anchorExplain(c,cal)}`];
+  out.push(`Year part <b>${yy}</b>:<ul>${m.steps.map(s=>`<li>${s}</li>`).join('')}</ul>`);
+  out.push(`${DAYS[a]} + ${m.hop} = <b>${DAYS[mod(a+m.hop,7)]}</b>. That's ${y}'s doomsday.`);
+  return out;
+}
+function hopText(dd,d,ddDay){
+  const diff=d-dd;
+  if(diff===0)return `It <i>is</i> the doomsday date, so it's <b>${DAYS[ddDay]}</b>.`;
+  const k=Math.abs(diff),r=k%7,dir=diff>0?'after':'before',ans=mod(ddDay+diff,7);
+  const shrink=k>=7?` Take away 7s → ${r}.`:'';
+  return `${d} is ${k} day${k>1?'s':''} ${dir} ${dd}.${shrink} ${DAYS[ddDay]} ${diff>0?'+':'−'} ${r} = <b>${DAYS[ans]}</b>.`;
+}
+function fullExplain(y,m,d){
+  const cal=calOf(y,m,d),leap=isLeap(y,cal),yd=yearDD(y,cal),dd=ddDate(m,leap);
+  const st=[];
+  st.push(cal==='G'?`${y} uses today's calendar (Gregorian).`:`This date is before Oct 15, 1582, so use the old Julian calendar.`);
+  st.push(...yearExplain(y,cal,S.method));
+  let mNote=`${MONTHS[m-1]}'s doomsday date is <b>${m}/${dd}</b>`;
+  if(m<=2)mNote+=leap?` (${y} is a leap year)`:` (${y} isn't a leap year)`;
+  st.push(mNote+'.');
+  st.push(hopText(dd,d,yd));
+  return `<ol class="steps">${st.map(s=>`<li>${s}</li>`).join('')}</ol>`;
+}
+function randDate(y0,y1){
+  for(;;){const y=rnd(y0,y1),m=rnd(1,12),d=rnd(1,dim(y,m,calOf(y,m,1)));
+    if(y===1582&&m===10&&d>=5&&d<=14)continue;return {y,m,d};}
+}
+const fmt=({y,m,d})=>`${MONTHS[m-1]} ${d}, ${y}`;
+
+/* ---------- dial ---------- */
+function dialHTML(mode,o={}){
+  let h=`<div class="dial${o.static?' static':''}" role="group" aria-label="Days of the week">`;
+  for(let i=0;i<7;i++){
+    const lab=mode==='num'?`<b>${i}</b>`:mode==='name'?`<b>${SHORT[i]}</b>`:`<b>${SHORT[i]}</b><small>${i}</small>`;
+    const cls=['dk'];if(o.hi===i)cls.push('hi');if(o.mark===i)cls.push('mark');
+    h+=o.static?`<span class="${cls.join(' ')}" style="--a:${i*360/7}deg">${lab}</span>`
+      :`<button class="${cls.join(' ')}" data-v="${i}" style="--a:${i*360/7}deg" aria-label="${DAYS[i]}, ${i}">${lab}</button>`;
+  }
+  return h+`<div class="dial-c" id="dialC">${o.center??'?'}</div></div>`;
+}
+
+/* ---------- levels ---------- */
+const thisYear=new Date().getFullYear(),tyDD=yearDD(thisYear,'G');
+const chips=()=>`<div class="chips">${DAYS.map((d,i)=>`<div class="chip"><b>${i}</b><span>${d}</span><small>${FUN[i]}</small></div>`).join('')}</div>`;
+const ddTable=()=>`<div class="ddtable">${MONTHS.map((mn,i)=>`<div><span>${mn.slice(0,3)}</span><b>${i+1}/${[ '3 or 4','28 or 29',14,4,9,6,11,8,5,10,7,12][i]}</b></div>`).join('')}</div>`;
+
+const LEVELS=[
+{title:'Days are numbers',icon:'🔢',count:6,lessons:[
+ ['Give every day a number',`<p>Here's the secret of the whole game: every day of the week gets a number, starting with Sunday as 0.</p>${chips()}`],
+ ['Say the silly names',`<p>Read the small names out loud: <b>Noneday, Oneday, Twosday, Treblesday, Foursday, Fiveday, Six-a-day</b>. Each one sounds like its number, so you'll remember fast.</p>`],
+ ['The days go round',`<p>After Saturday (6) comes Sunday (0) again. The week is a circle, just like this dial. You'll tap it to answer.</p>${dialHTML('both',{static:true,hi:new Date().getDay(),center:'↻'})}<p class="note">Today is ${DAYS[new Date().getDay()]}, so today is day ${new Date().getDay()}.</p>`]],
+ gen(){if(Math.random()<.5){const i=rnd(0,6);return{prompt:`What number is <b>${DAYS[i]}</b>?`,kind:'dial',mode:'num',answer:i,hint:`Sunday is 0. Count up from there. Its silly name helps: ${FUN[i]}.`,explain:`${DAYS[i]} is <b>${i}</b> — ${FUN[i]}.`};}
+  const i=rnd(0,6);return{prompt:`Which day is number <b>${i}</b>?`,kind:'dial',mode:'name',answer:i,hint:`Start at Sunday = 0 and count ${i} step${i===1?'':'s'} around.`,explain:`Day ${i} is <b>${DAYS[i]}</b> (${FUN[i]}).`};}},
+
+{title:'Hop by sevens',icon:'🐸',count:6,lessons:[
+ ['Seven hops = back home',`<p>Every 7 days you land on the same day again. Monday + 7 days = Monday. Monday + 14 days = Monday.</p>`],
+ ['Big hops shrink',`<p>To hop a big number, throw away the 7s first.</p><div class="ex">Tuesday + 16 days<br>16 → take away 7 → 9 → take away 7 → <b>2</b><br>Tuesday + 2 = <b>Thursday</b></div>`],
+ ['Hopping backward',`<p>Going back works the same way, just the other direction around the circle.</p><div class="ex">Friday − 3 = <b>Tuesday</b><br>Friday − 10 → 10 shrinks to 3 → <b>Tuesday</b></div>`]],
+ gen(){const s=rnd(0,6),back=Math.random()<.3,n=back?rnd(1,12):rnd(2,24),ans=mod(s+(back?-n:n),7),r=n%7;
+  return{prompt:`Start on <b>${DAYS[s]}</b>. Hop <b>${back?'back':'forward'} ${n}</b> day${n>1?'s':''}. Where do you land?`,kind:'dial',mode:'both',mark:s,answer:ans,
+   hint:n>=7?`Throw away the 7s: ${n} shrinks to ${r}. Now hop ${r} ${back?'back':'forward'}.`:`Count ${n} step${n>1?'s':''} ${back?'backward':'forward'} around the dial.`,
+   explain:`${n>=7?`${n} shrinks to ${r}. `:''}${DAYS[s]} ${back?'−':'+'} ${r} = <b>${DAYS[ans]}</b>.`};}},
+
+{title:'Doomsday dates',icon:'📅',count:6,lessons:[
+ ['Some dates always match',`<p>Every year, a set of dates all land on the same weekday. That weekday is called the year's <b>doomsday</b>.</p><div class="ex">In ${thisYear}, 4/4, 6/6, 8/8, 10/10 and 12/12 are all <b>${DAYS[tyDD]}s</b>.</div>`],
+ ['Even months: doubles',`<p>For even months, the month and day are the same number.</p><div class="ex big">4/4 &nbsp; 6/6 &nbsp; 8/8 &nbsp; 10/10 &nbsp; 12/12</div>`],
+ ['Odd months: 9-to-5 at the 7-Eleven',`<p>Say it: <b>"I work 9 to 5 at the 7-Eleven."</b></p><div class="ex big">5/9 &nbsp; 9/5 &nbsp; 7/11 &nbsp; 11/7</div><p>It works both ways round.</p>`],
+ ['The tricky three',`<p><b>March:</b> 3/14, Pi Day.<br><b>February:</b> the last day — 28, or 29 in a leap year.<br><b>January:</b> the 3rd — or the 4th in a leap year. Three years out of four it's the 3rd; the fourth year it's the 4th.</p>`],
+ ['All twelve',`${ddTable()}<p class="note">Leap years: January 4 and February 29.</p>`]],
+ gen(){const m=rnd(1,12),leap=m<=2?Math.random()<.5:false,ans=ddDate(m,leap);
+  const pool=[...new Set([3,4,5,6,7,8,9,10,11,12,14,28,29,1,2,13,15,20])].filter(x=>x!==ans);
+  const opts=[ans];while(opts.length<4){const x=pick(pool);if(!opts.includes(x))opts.push(x);}opts.sort((a,b)=>a-b);
+  const tip={1:'3rd normally, 4th in a leap year.',2:'The last day of February.',3:'Pi Day: 3.14.',5:'9 to 5 at the 7-Eleven: 5/9.',7:'7-Eleven: 7/11.',9:'9 to 5: 9/5.',11:'7-Eleven backward: 11/7.'}[m]||`Even month: double it, ${m}/${m}.`;
+  return{prompt:`Which ${MONTHS[m-1]} date is a doomsday${m<=2?` in a <b>${leap?'leap':'normal'}</b> year`:''}?`,kind:'choice',options:opts.map(v=>({v,label:`${m}/${v}`})),answer:ans,hint:tip,explain:`${MONTHS[m-1]}: <b>${m}/${ans}</b>. ${tip}`};}},
+
+{title:'Any date in a year',icon:'🎯',count:6,lessons:[
+ ['Find it, then hop',`<p>If you know the year's doomsday, any date is two moves away: find that month's doomsday date, then hop.</p><div class="ex">Doomsday is <b>Saturday</b>. What day is July 20?<br>July's doomsday date: 7/11 → Saturday<br>20 is 9 days after 11 → shrinks to 2<br>Saturday + 2 = <b>Monday</b></div>`],
+ ['Hop backward too',`<div class="ex">Doomsday is <b>Saturday</b>. What day is July 4?<br>4 is 7 days before 11 → shrinks to 0<br>So July 4 is a <b>Saturday</b> too.</div><p>Pick whichever doomsday date is closest. For December 25, use 12/12 — or use 12/26 (12/12 + 14).</p>`]],
+ gen(){const D=rnd(0,6),m=rnd(1,12),leap=m<=2&&Math.random()<.5,d=rnd(1,[31,leap?29:28,31,30,31,30,31,31,30,31,30,31][m-1]),dd=ddDate(m,leap),ans=mod(D+d-dd,7);
+  return{prompt:`This year's doomsday is <b>${DAYS[D]}</b>${m<=2?` (a ${leap?'leap':'normal'} year)`:''}. What day is <b>${MONTHS[m-1]} ${d}</b>?`,kind:'dial',mode:'both',mark:D,answer:ans,
+   hint:`${MONTHS[m-1]}'s doomsday date is ${m}/${dd}, and that's a ${DAYS[D]}. Now hop to ${d}.`,explain:hopText(dd,d,D)};}},
+
+{title:'Century anchors',icon:'⚓',count:5,lessons:[
+ ['Every century has an anchor',`<p>Each century has a starting day called its <b>anchor</b>. Learn these four:</p><div class="ddtable four"><div><span>1800s</span><b>Friday</b></div><div><span>1900s</span><b>Wednesday</b></div><div><span>2000s</span><b>Tuesday</b></div><div><span>2100s</span><b>Sunday</b></div></div>`],
+ ['Memory tricks',`<p><b>2000s → Tuesday:</b> Twos-day for the 2000s.<br><b>1900s → Wednesday:</b> "We-in-dis-day."</p><p>The four anchors in order are Tue, Sun, Fri, Wed, which as numbers are <b>2, 0, 5, 3</b>. Say it like a year: <b>"twenty fifty-three."</b></p>`],
+ ['The anchor loop',`<p>The anchors go round a loop. Follow the arrows to go forward in time.</p>
+<div class="loop" aria-label="Anchor loop: Tuesday, Sunday, Friday, Wednesday, back to Tuesday">
+<div class="lp"><b>Tue</b><small>1600s · 2000s</small></div><div class="ar">→<small>−2</small></div><div class="lp"><b>Sun</b><small>1700s · 2100s</small></div>
+<div class="ar short">↑<small>−1</small></div><div></div><div class="ar">↓<small>−2</small></div>
+<div class="lp"><b>Wed</b><small>1900s · 2300s</small></div><div class="ar">←<small>−2</small></div><div class="lp"><b>Fri</b><small>1800s · 2200s</small></div></div>
+<p>Each step is 2 days back, except the one short step of 1.</p>`],
+ ['Going back in time',`<p>Go round the loop the other way, and count <b>forward</b>.</p><div class="ex">2000s Tue <b>+1</b> → 1900s Wed<br>1900s Wed <b>+2</b> → 1800s Fri<br>1800s Fri <b>+2</b> → 1700s Sun</div><p class="note">Why the short step? 2000 was a leap year, but 1700, 1800 and 1900 weren't.</p>`],
+ ['They repeat every 400 years',`<p>1600s = 2000s = 2400s = Tuesday.<br>1700s = 2100s = 2500s = Sunday.<br>So those four anchors cover every century from 1600 on.</p>`]],
+ gen(){const c=rnd(16,25);return{prompt:`What's the anchor for the <b>${c}00s</b>?`,kind:'dial',mode:'both',answer:anchor(c,'G'),hint:`Four-century cycle: 2000s Tue, 2100s Sun, 2200s Fri, 2300s Wed, then it repeats.`,explain:anchorExplain(c,'G')};}},
+
+{title:"The year's doomsday",icon:'🧮',count:6,lessons:[
+ ['Split the year',`<p>Break a year into two parts: <b>19</b>|<b>87</b>. The first part gives the century anchor (1900s → Wednesday). The last two digits tell you how far to hop from it.</p>`],
+ ['Way 1: Odd + 11',`<div class="ex">87 is odd → add 11 → 98<br>Halve it → 49<br>49 is odd → add 11 → 60<br>Take away 7s → 4<br>7 − 4 = <b>3</b><br>Wednesday + 3 = <b>Saturday</b></div><p>Only halving and adding 11 — great if you like small numbers.</p>`],
+ ['Way 2: Twelves',`<div class="ex">How many 12s in 87? <b>7</b> (7 × 12 = 84)<br>Left over: <b>3</b><br>How many 4s in 3? <b>0</b><br>7 + 3 + 0 = 10 → take away 7 → <b>3</b><br>Wednesday + 3 = <b>Saturday</b></div><p>Both ways give the same answer. 1987's doomsday is Saturday.</p>`],
+ ['Pick your way','@method']],
+ gen(){const y=rnd(1900,2099);return{prompt:`What's the doomsday for <b>${y}</b>?`,kind:'dial',mode:'both',answer:yearDD(y,'G'),hint:`The ${Math.floor(y/100)}00s anchor is ${DAYS[anchor(Math.floor(y/100),'G')]}. Now work out ${y%100} with ${S.method==='odd11'?'Odd + 11':'Twelves'}.`,explain:`<ol class="steps">${yearExplain(y,'G',S.method).map(s=>`<li>${s}</li>`).join('')}</ol>`};}},
+
+{title:'Time machine',icon:'⏳',count:5,lessons:[
+ ['The old calendar',`<p>Before <b>October 15, 1582</b>, Europe used the Julian calendar. Its leap years come every 4 years with no exceptions — even 1500 and 1300 were leap years.</p><div class="ex">Thursday, October 4, 1582<br>was followed by<br>Friday, October 15, 1582.<br>Ten days vanished!</div>`],
+ ['Julian anchors',`<p>Take the century number, divide by 7, and keep the leftover. Go that many days <b>back</b> from Sunday.</p><div class="ex">1400s: 14 ÷ 7 leaves 0 → <b>Sunday</b><br>1000s: 10 ÷ 7 leaves 3 → Sunday back 3 → <b>Thursday</b></div>`],
+ ['Everything else stays',`<p>Same year trick, same doomsday dates, same hopping. Just remember that every 4th year is a leap year for January and February.</p><p class="note">Britain and its colonies switched later, in 1752. This game uses the 1582 switch.</p>`]],
+ gen(){if(Math.random()<.45){const c=rnd(1,15);return{prompt:`What's the Julian anchor for the <b>${c}00s</b>?`,kind:'dial',mode:'both',answer:anchor(c,'J'),hint:`${c} ÷ 7 leaves ${c%7}. Go back that many from Sunday.`,explain:anchorExplain(c,'J')};}
+  const t=randDate(200,1581);return{prompt:`What day was <b>${fmt(t)}</b>?`,kind:'dial',mode:'both',answer:weekday(t.y,t.m,t.d),hint:`Julian calendar. Start with the anchor: ${Math.floor(t.y/100)} ÷ 7 leaves ${Math.floor(t.y/100)%7}.`,explain:fullExplain(t.y,t.m,t.d)};}},
+
+{title:'Grand master',icon:'👑',count:8,lessons:[
+ ['Put it all together',`<ol class="steps"><li>Which calendar? After Oct 15, 1582 it's the modern one.</li><li>Find the century anchor.</li><li>Hop to the year's doomsday.</li><li>Find the month's doomsday date.</li><li>Hop to your date.</li></ol><p>Any year in history. "Show me the steps" is always there if you get stuck.</p>`]],
+ gen(i){const r=i<3?[1900,2099]:i<6?[1583,2999]:[1,1581],t=randDate(...r);
+  return{prompt:`What day ${t.y<thisYear?'was':'is'} <b>${fmt(t)}</b>?`,kind:'dial',mode:'both',answer:weekday(t.y,t.m,t.d),hint:`Start with the ${Math.floor(t.y/100)}00s anchor${calOf(t.y,t.m,t.d)==='J'?' (Julian calendar)':''}.`,explain:fullExplain(t.y,t.m,t.d)};}}
+];
+
+/* ---------- screens ---------- */
+const totalStars=()=>Object.values(S.stars).reduce((a,b)=>a+b,0);
+function topbar(back){
+  return `<header class="top">${back?`<button class="ghost" onclick="home()" aria-label="Back to map">←&nbsp;Map</button>`:`<div class="brand">Doomsday Quest</div>`}
+  <div class="stats"><span title="Stars">⭐ ${totalStars()}</span><span title="XP">✨ ${S.xp}</span><span title="Streak">🔥 ${streak}</span></div></header>`;
+}
+function home(){
+  const t=new Date().getDay();
+  let h=topbar(false)+`<section class="hero">${dialHTML('both',{static:true,hi:t,center:`<span>today</span><b>${t}</b>`})}
+  <h1>Name the weekday of any date, in your head.</h1><p>Eight levels, from counting days to dates a thousand years ago.</p></section><ol class="path">`;
+  LEVELS.forEach((L,i)=>{
+    const open=true,st=S.stars[i]||0;
+    h+=`<li class="node ${open?'':'locked'} ${st?'done':''}" style="--off:${[0,1,0,-1][i%4]}"><button ${open?`onclick="startLevel(${i})"`:'disabled'}>
+      <span class="bub">${open?L.icon:'🔒'}</span><span class="nt"><small>Level ${i+1}</small><b>${L.title}</b><span class="st">${'★'.repeat(st)}${'☆'.repeat(3-st)}</span></span></button></li>`;
+  });
+  h+=`</ol><section class="panel"><button class="big alt" onclick="practice()">Practice arena</button>
+  <div class="set"><span>Year trick</span><div class="seg">${segBtns()}</div></div>
+  <button class="link" id="rst" onclick="resetP(this)">Reset progress</button></section>`;
+  app().innerHTML=h;window.scrollTo(0,0);
+}
+function segBtns(){return [['odd11','Odd + 11'],['twelves','Twelves']].map(([k,l])=>`<button class="${S.method===k?'on':''}" onclick="setMethod('${k}',this)">${l}</button>`).join('');}
+function setMethod(k,el){S.method=k;save();const seg=el.closest('.seg');seg.innerHTML=segBtns();}
+function resetP(b){if(b.dataset.c){S={xp:0,stars:{},method:S.method,bestTime:null};streak=0;save();home();}else{b.dataset.c=1;b.textContent='Tap again to erase everything';}}
+
+/* ---------- level flow ---------- */
+let L,Li,phase,idx,mistakes,Q;
+let recent=[];
+function fresh(gen){let q;for(let t=0;t<30;t++){q=gen();if(!recent.includes(q.answer))break;}recent=[q.answer,...recent].slice(0,3);return q;}
+function startLevel(i){Li=i;L=LEVELS[i];phase='learn';idx=0;mistakes=0;recent=[];renderLevel();}
+function renderLevel(){
+  if(phase==='learn'){
+    const [t,body]=L.lessons[idx],last=idx===L.lessons.length-1;
+    const content=body==='@method'?`<p>Choose the one that feels easier. You can switch any time on the map.</p><div class="seg wide">${segBtns()}</div>`:body;
+    app().innerHTML=topbar(true)+`<section class="card lesson"><div class="dots">${L.lessons.map((_,j)=>`<i class="${j===idx?'on':''}"></i>`).join('')}</div>
+    <h2>${t}</h2>${content}</section><nav class="navrow">${idx?`<button class="ghost" onclick="idx--;renderLevel()">Back</button>`:'<span></span>'}
+    <button class="big" onclick="${last?"phase='quiz';idx=0;nextQ()":'idx++;renderLevel()'}">${last?"Let's play":'Next'}</button></nav>`;
+    window.scrollTo(0,0);return;
+  }
+}
+function nextQ(){
+  if(idx>=L.count)return finish();
+  Q=fresh(()=>L.gen(idx));Q.missed=false;Q.done=false;
+  const bar=`<div class="bar"><i style="width:${idx/L.count*100}%"></i></div>`;
+  app().innerHTML=topbar(true)+bar+`<section class="quiz"><small class="qn">Question ${idx+1} of ${L.count}</small><h2 class="prompt">${Q.prompt}</h2>
+   ${answerPad(Q)}<div id="fb" class="fb" aria-live="polite"></div>
+   <div class="navrow"><button class="ghost" id="steps" onclick="showSteps()">Show me the steps</button><button class="big" id="nx" hidden onclick="idx++;nextQ()">Next</button></div></section>`;
+  bindPad(answerQ);window.scrollTo(0,0);
+}
+function answerPad(Q){
+  if(Q.kind==='dial')return dialHTML(Q.mode,{mark:Q.mark});
+  return `<div class="choices">${Q.options.map(o=>`<button class="dk ch" data-v="${o.v}">${o.label}</button>`).join('')}</div>`;
+}
+function bindPad(fn){document.querySelectorAll('button.dk').forEach(b=>b.onclick=()=>fn(+b.dataset.v,b));}
+function answerQ(v,b){
+  if(Q.done)return;const fb=$('#fb'),c=$('#dialC');
+  if(v===Q.answer){
+    Q.done=true;b.classList.add('ok');if(c)c.innerHTML='✓';
+    if(!Q.missed){S.xp+=10;streak++;}else S.xp+=5;save();
+    fb.className='fb good';fb.innerHTML=`<b>${pick(['Nailed it!','Yes!','Spot on!','You got it!'])}</b> ${Q.explain}`;
+    $('#nx').hidden=false;$('#steps').hidden=true;$('#nx').focus();
+    document.querySelector('.stats').innerHTML=`<span>⭐ ${totalStars()}</span><span>✨ ${S.xp}</span><span>🔥 ${streak}</span>`;
+  }else{
+    if(!Q.missed)mistakes++;Q.missed=true;streak=0;b.classList.add('no');b.disabled=true;
+    if(c)c.innerHTML='✗';fb.className='fb bad';fb.innerHTML=`<b>Not quite.</b> Hint: ${Q.hint}`;
+  }
+}
+function showSteps(){const fb=$('#fb');if(!Q.missed){Q.missed=true;mistakes++;streak=0;}fb.className='fb info';fb.innerHTML=`<b>Here's how:</b> ${Q.explain}`;}
+function finish(){
+  const st=mistakes===0?3:mistakes<=2?2:1;S.stars[Li]=Math.max(S.stars[Li]||0,st);S.xp+=20;save();
+  const more=Li<LEVELS.length-1;
+  app().innerHTML=topbar(true)+`<section class="card result"><div class="bigstars">${'★'.repeat(st)}<span>${'★'.repeat(3-st)}</span></div>
+  <h2>${L.title}: complete</h2><p>${mistakes===0?'Perfect run — no slips at all.':`${mistakes} question${mistakes>1?'s':''} needed a hint. Replay for three stars.`}</p><p class="note">+20 bonus XP</p>
+  <nav class="navrow"><button class="ghost" onclick="startLevel(${Li})">Replay</button>${more?`<button class="big" onclick="startLevel(${Li+1})">Next level</button>`:`<button class="big" onclick="practice()">Practice arena</button>`}</nav></section>`;
+}
+
+/* ---------- practice ---------- */
+const RANGES=[['1900–2099',1900,2099],['1600–2999',1583,2999],['Any year',1,9999]];
+let PR=0,PT,PQ;
+function practice(){PR=Math.min(PR,2);newPractice();}
+function newPractice(){
+  const [,a,b]=RANGES[PR];PQ=fresh(()=>{const t=randDate(a,b);t.answer=weekday(t.y,t.m,t.d);return t;});PQ.ans=PQ.answer;PQ.done=false;PQ.missed=false;PT=Date.now();
+  app().innerHTML=topbar(true)+`<section class="quiz"><div class="seg wide">${RANGES.map((r,i)=>`<button class="${i===PR?'on':''}" onclick="PR=${i};newPractice()">${r[0]}</button>`).join('')}</div>
+  <h2 class="prompt">What day ${PQ.y<thisYear?'was':'is'} <b>${fmt(PQ)}</b>?</h2>${dialHTML('both')}<div id="fb" class="fb" aria-live="polite">${S.bestTime?`<span class="note">Best time: ${S.bestTime}s</span>`:''}</div>
+  <div class="navrow"><button class="ghost" id="steps" onclick="pSteps()">Show me the steps</button><button class="big" onclick="newPractice()">New date</button></div></section>`;
+  bindPad(pAnswer);
+}
+function pAnswer(v,b){
+  if(PQ.done)return;const fb=$('#fb');
+  if(v===PQ.ans){PQ.done=true;b.classList.add('ok');$('#dialC').innerHTML='✓';const s=Math.round((Date.now()-PT)/100)/10;
+    let rec='';if(!PQ.missed){S.xp+=10;streak++;if(!S.bestTime||s<S.bestTime){S.bestTime=s;rec=' New best time!';}}save();
+    fb.className='fb good';fb.innerHTML=`<b>${DAYS[v]} — correct in ${s}s.</b>${rec}`;
+    document.querySelector('.stats').innerHTML=`<span>⭐ ${totalStars()}</span><span>✨ ${S.xp}</span><span>🔥 ${streak}</span>`;}
+  else{PQ.missed=true;streak=0;b.classList.add('no');b.disabled=true;$('#dialC').innerHTML='✗';fb.className='fb bad';fb.innerHTML=`<b>Not ${DAYS[v]}.</b> Try again, or tap "Show me the steps".`;}
+}
+function pSteps(){PQ.missed=true;streak=0;const fb=$('#fb');fb.className='fb info';fb.innerHTML=`<b>Here's how:</b> ${fullExplain(PQ.y,PQ.m,PQ.d)}`;}
+
+home();
