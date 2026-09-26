@@ -44,8 +44,24 @@ button.dk:hover{border-color:var(--lilac)}
 @keyframes pop{50%{scale:1.18}}@keyframes shake{25%{translate:-5px}75%{translate:5px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 /* path */
-.path{list-style:none;padding:0;margin:26px 0;display:flex;flex-direction:column;gap:14px}
-.node{padding-left:calc((var(--off) + 1)*12%)}
+.home-map{position:relative;display:block;padding:8px 0 12px;--step:clamp(40px,13%,76px)}
+.path{list-style:none;padding:0;margin:18px 0 22px;display:flex;flex-direction:column;gap:22px}
+.node{position:relative;padding-left:calc(var(--off)*var(--step))}
+.node button{position:relative;z-index:1}
+/* map trail + scenery */
+.trail{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+.trail path{fill:none;stroke:var(--edge);stroke-width:4;stroke-linecap:round;stroke-dasharray:1 11;opacity:.7}
+.trail path.walked{stroke:var(--sun);stroke-dasharray:none;opacity:1;stroke-width:5}
+.map-start,.map-end{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;width:66px;font:600 .8rem var(--display);color:var(--soft)}
+.map-start span{font-size:1.5rem;line-height:1.2}
+.map-end{margin-left:calc(1*var(--step));font-size:2.2rem;line-height:1.2}
+.lm{position:absolute;top:50%;translate:0 -50%;font-size:1.9rem;opacity:.85;pointer-events:none}
+.lm.left{left:0}
+.lm.right{right:4%}
+.here{display:inline-block;margin-top:4px;font:800 .78rem var(--body);color:var(--ink);background:var(--sun);border-radius:999px;padding:2px 10px;width:max-content}
+.node.next .bub{border-color:var(--lilac);box-shadow:0 5px 0 var(--lilac)}
+@media (prefers-reduced-motion:no-preference){.node.next .bub{animation:beckon 2.4s ease-in-out infinite}}
+@keyframes beckon{50%{scale:1.07}}
 .node button{display:flex;align-items:center;gap:14px;text-align:left;width:100%;max-width:330px}
 .bub{flex:none;width:66px;height:66px;border-radius:50%;background:var(--surf);border:3px solid var(--edge);display:grid;place-items:center;font-size:1.8rem;box-shadow:0 5px 0 var(--line)}
 .node.done .bub{border-color:var(--star);box-shadow:0 5px 0 var(--sun)}

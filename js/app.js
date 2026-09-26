@@ -181,14 +181,39 @@ function home(first){
   const t=new Date().getDay();
   let h=topbar(false)+`<div class="home"><div class="home-side"><section class="hero">${dialHTML('both',{static:true,hi:t,center:`<span>today</span><b>${t}</b>`,label:`Week dial. Today is ${DAYS[t]}, day ${t}.`})}
   <h1 tabindex="-1" data-focus>Name the weekday of any date, in your head.</h1><p>Eight levels, from counting days to dates a thousand years ago.</p></section>`+homePanel()+`</div>
-  <nav class="home-map" aria-label="Levels"><ol class="path">`;
+  <nav class="home-map" aria-label="Levels"><svg class="trail" aria-hidden="true"></svg>
+  <div class="map-start" aria-hidden="true"><span>🚩</span>Start</div><ol class="path">`;
+  const next=LEVELS.findIndex((_,i)=>!S.stars[i]);
   LEVELS.forEach((L,i)=>{
     const open=true,st=S.stars[i]||0;
-    h+=`<li class="node ${open?'':'locked'} ${st?'done':''}" style="--off:${[0,1,0,-1][i%4]}"><button ${open?`onclick="startLevel(${i})"`:'disabled'}>
-      <span class="bub" aria-hidden="true">${open?L.icon:'🔒'}</span><span class="nt"><small>Level ${i+1}</small><b>${L.title}</b><span class="st">${starsHTML(st)}</span></span></button></li>`;
+    h+=`<li class="node ${open?'':'locked'} ${st?'done':''} ${i===next?'next':''}" style="--off:${[0,1,2,1][i%4]}">${LANDMARKS[i]||''}<button ${open?`onclick="startLevel(${i})"`:'disabled'}>
+      <span class="bub" aria-hidden="true">${open?L.icon:'🔒'}</span><span class="nt"><small>Level ${i+1}</small><b>${L.title}</b><span class="st">${starsHTML(st)}</span>${i===next?`<span class="here"><span aria-hidden="true">📍</span> You are here</span>`:''}</span></button></li>`;
   });
-  h+=`</ol></nav></div>`;
+  h+=`</ol><div class="map-end" aria-hidden="true">🏰</div></nav></div>`;
   app().innerHTML=h;settle('',!first);
+  watchTrail();
+}
+/* Scenery beside the trail, on the side away from each level's swing. */
+const LANDMARKS={2:'<span class="lm left" aria-hidden="true">🌲</span>',4:'<span class="lm right" aria-hidden="true">⛰️</span>',6:'<span class="lm left" aria-hidden="true">🌳</span>'};
+/* Draw a smooth trail through the Start sign, every level bubble and the castle.
+   Walked stretches are drawn solid gold; the rest stay dotted. */
+function drawTrail(){
+  const map=$('.home-map');if(!map)return;
+  const svg=map.querySelector('.trail'),base=map.getBoundingClientRect();
+  const c=el=>{const r=el.getBoundingClientRect();return [r.left+r.width/2-base.left,r.top+r.height/2-base.top];};
+  const nodes=[...map.querySelectorAll('.node')];
+  const pts=[c(map.querySelector('.map-start span')),...nodes.map(n=>c(n.querySelector('.bub'))),c(map.querySelector('.map-end'))];
+  /* A stretch counts as walked once the level it leads to is finished (the castle: once Level 8 is). */
+  const lv=nodes.map(n=>n.classList.contains('done')),walked=[...lv,lv[lv.length-1]];
+  svg.setAttribute('viewBox',`0 0 ${base.width} ${base.height}`);
+  svg.innerHTML=pts.slice(1).map(([x1,y1],i)=>{const [x0,y0]=pts[i],m=(y1-y0)/2;
+    return `<path class="${walked[i]?'walked':''}" d="M${x0} ${y0}C${x0} ${y0+m} ${x1} ${y1-m} ${x1} ${y1}"/>`;}).join('');
+}
+let trailObs;
+function watchTrail(){
+  trailObs?.disconnect();drawTrail();
+  if('ResizeObserver' in window){trailObs=new ResizeObserver(drawTrail);trailObs.observe($('.home-map'));}
+  document.fonts?.ready.then(drawTrail);
 }
 function homePanel(){
   return `<section class="panel" aria-label="Practice and settings"><button class="big alt" onclick="practice()">Practice arena</button>
