@@ -22,9 +22,10 @@ function methodSteps(yy,method){
   const st=[];
   if(method==='odd11'){
     let t=yy; st.push(`Start with <b>${yy}</b>.`);
-    if(t%2){st.push(`${t} is odd, so add 11 → <b>${t+11}</b>.`);t+=11;}
+    const check=()=>{if(t%2){st.push(`${t} is odd, so add 11 → <b>${t+11}</b>.`);t+=11;}else st.push(`${t} is even, so leave it.`);};
+    check();
     st.push(`Halve it → <b>${t/2}</b>.`);t/=2;
-    if(t%2){st.push(`${t} is odd, so add 11 → <b>${t+11}</b>.`);t+=11;}
+    check();
     const r=t%7,h=(7-r)%7;
     st.push(`Take away 7s from ${t}: leftover <b>${r}</b>.`);
     st.push(r===0?`Leftover 0 means no hop: stay on the anchor.`:`7 − ${r} = <b>${h}</b>. Hop forward ${h} from the anchor.`);
@@ -148,7 +149,11 @@ const LEVELS=[
 
 {title:"The year's doomsday",icon:'🧮',count:6,lessons:[
  ['Split the year',`<p>Break a year into two parts: <b>19</b>|<b>87</b>. The first part gives the century anchor (1900s → Wednesday). The last two digits tell you how far to hop from it.</p>`],
- ['Way 1: Odd + 11',`<div class="ex">87 is odd → add 11 → 98<br>Halve it → 49<br>49 is odd → add 11 → 60<br>Take away 7s → 4<br>7 − 4 = <b>3</b><br>Wednesday + 3 = <b>Saturday</b></div><p>Only halving and adding 11 — great if you like small numbers.</p>`],
+ ['Way 1: Odd + 11',`<p>It's always the same four moves: <b>check odd, halve, check odd, sevens</b>.</p>
+<ol class="steps"><li><b>Check odd:</b> if it's odd, add 11.</li><li><b>Halve</b> it — always, just once.</li><li><b>Check odd</b> again: if it's odd, add 11.</li><li><b>Sevens:</b> take away 7s. Hop forward 7 minus the leftover.</li></ol>
+<p>So you add 11 twice, once, or not at all — never more.</p>
+<div class="ex"><b>1987</b> (1900s anchor: Wednesday)<br>87 is odd → add 11 → 98<br>Halve it → 49<br>49 is odd → add 11 → 60<br>Take away 7s → 4<br>7 − 4 = <b>3</b> → Wednesday + 3 = <b>Saturday</b></div>
+<div class="ex"><b>2026</b> (2000s anchor: Tuesday)<br>26 is even → leave it<br>Halve it → 13<br>13 is odd → add 11 → 24<br>Take away 7s → 3<br>7 − 3 = <b>4</b> → Tuesday + 4 = <b>Saturday</b></div>`],
  ['Way 2: Twelves',`<div class="ex">How many 12s in 87? <b>7</b> (7 × 12 = 84)<br>Left over: <b>3</b><br>How many 4s in 3? <b>0</b><br>7 + 3 + 0 = 10 → take away 7 → <b>3</b><br>Wednesday + 3 = <b>Saturday</b></div><p>Both ways give the same answer. 1987's doomsday is Saturday.</p>`],
  ['Pick your way','@method']],
  gen(){const y=rnd(1900,2099);return{prompt:`What's the doomsday for <b>${y}</b>?`,kind:'dial',mode:'both',answer:yearDD(y,'G'),hint:`The ${Math.floor(y/100)}00s anchor is ${DAYS[anchor(Math.floor(y/100),'G')]}. Now work out ${y%100} with ${S.method==='odd11'?'Odd + 11':'Twelves'}.`,explain:`<ol class="steps">${yearExplain(y,'G',S.method).map(s=>`<li>${s}</li>`).join('')}</ol>`};}},
@@ -218,10 +223,33 @@ function watchTrail(){
 }
 function homePanel(){
   return `<section class="panel" aria-label="Practice and settings"><button class="big alt" onclick="practice()">Practice arena</button>
-  <div class="set"><span id="ytl">Year trick</span><span class="tip"><button class="tip-btn" aria-label="How the year tricks differ" aria-describedby="ytip" onclick="this.parentNode.classList.toggle('open')">i</button>
-  <span class="tip-box" role="tooltip" id="ytip"><b>Odd + 11:</b> if the last two digits are odd, add 11. Halve it. If that's odd, add 11 again. Take away 7s, then hop forward 7 minus the leftover. The numbers stay small, so it's easy to do in your head.<br><br><b>Twelves:</b> count the 12s in the last two digits, the leftover, and the 4s in that leftover. Add all three, then take away 7s. There are fewer steps, but you divide by 12.<br><br>Both give the same answer, so pick the one you like.</span></span>
+  <div class="set"><span id="ytl">Year trick</span><span class="tip"><button class="tip-btn" aria-label="How the year tricks differ" aria-describedby="ytip" aria-haspopup="dialog" onclick="openTricks(this)">i</button>
+  <span class="tip-box" role="tooltip" id="ytip">${yearTricks(false)}</span></span>
   <div class="seg" role="group" aria-labelledby="ytl">${segBtns()}</div></div>
-  <button class="link" id="rst" onclick="resetP(this)">Reset progress</button><p class="sr" id="rstMsg" aria-live="polite"></p></section>`;
+  <button class="link" id="rst" onclick="resetP(this)">Reset progress</button><p class="sr" id="rstMsg" aria-live="polite"></p></section>
+  <dialog class="sheet" id="ysheet" aria-labelledby="ysheet-t"><div class="sheet-grip" aria-hidden="true"></div>
+  <button class="sheet-x" aria-label="Close" onclick="this.closest('dialog').close()">✕</button>
+  <h2 id="ysheet-t">How the year tricks differ</h2>${yearTricks(true)}
+  <button class="big sheet-ok" onclick="this.closest('dialog').close()">Got it</button></dialog>`;
+}
+/* Explanation of the two year tricks. The sheet gets real headings and lists;
+   the tooltip gets plain spans because a tooltip is read out as flat text. */
+function yearTricks(sheet){
+  const H=t=>sheet?`<h3 class="tip-h">${t}</h3>`:`<b class="tip-h">${t}</b>`;
+  const OL=items=>sheet?`<ol class="tip-ol">${items.map(x=>`<li>${x}</li>`).join('')}</ol>`
+    :`<span class="tip-ol">${items.map((x,i)=>`<span>${i+1}. ${x}</span>`).join(' ')}</span>`;
+  const EX=t=>`<${sheet?'p':'span'} class="tip-ex">${t}</${sheet?'p':'span'}>`;
+  return `${sheet?'<p>':''}Both tricks turn a year's last two digits into a hop from the century anchor.${sheet?'</p>':''}
+  ${H('Odd + 11 — check odd, halve, check odd, sevens')}${OL(['Check odd: if it\'s odd, add 11.','Halve it (always, once).','Check odd again: if it\'s odd, add 11.','Take away 7s. Hop 7 minus the leftover.'])}
+  ${EX('26 → even, leave it → halve: 13 → odd, add 11: 24 → leftover 3 → hop <b>4</b>')}
+  ${H('Twelves — fewer steps, bigger numbers')}${OL(['How many 12s? What\'s left?','How many 4s in what\'s left?','Add all three. Take away 7s. Hop that many.'])}
+  ${EX('26 → two 12s, 2 left, no 4s → 2 + 2 + 0 = hop <b>4</b>')}
+  <${sheet?'p':'span'} class="tip-end">Same answer either way — pick the one you like.</${sheet?'p':'span'}>`;
+}
+/* Mouse users get the hover tooltip; touch screens get a bottom sheet dialog instead. */
+function openTricks(btn){
+  if(matchMedia('(hover:hover) and (pointer:fine)').matches){btn.parentNode.classList.toggle('open');return;}
+  const d=$('#ysheet');d.onclose=()=>btn.focus();d.showModal();
 }
 function segBtns(){return [['odd11','Odd + 11'],['twelves','Twelves']].map(([k,l])=>`<button class="${S.method===k?'on':''}" aria-pressed="${S.method===k}" data-k="${k}" onclick="setMethod('${k}',this)">${l}</button>`).join('');}
 function setMethod(k,el){S.method=k;save();const seg=el.closest('.seg');seg.innerHTML=segBtns();seg.querySelector(`[data-k="${k}"]`).focus();}
@@ -267,6 +295,16 @@ document.addEventListener('keydown',e=>{
   const p=[...document.querySelectorAll('[data-primary]')].find(b=>!b.hidden);
   if(p){e.preventDefault();p.click();}
 });
+/* Tapping the dimmed backdrop (outside the sheet's box) closes it. */
+document.addEventListener('click',e=>{const d=e.target;if(!(d instanceof HTMLDialogElement)||!d.open)return;
+  const r=d.getBoundingClientRect();if(e.clientY<r.top||e.clientY>r.bottom||e.clientX<r.left||e.clientX>r.right)d.close();});
+/* Open a tooltip upward when there isn't room for it below (e.g. the sticky desktop sidebar). */
+function placeTip(t){
+  const set=t.closest('.set').getBoundingClientRect(),h=t.querySelector('.tip-box').offsetHeight+16;
+  const below=innerHeight-set.bottom,above=set.top;
+  t.classList.toggle('up',below<h&&above>below);
+}
+['mouseover','focusin','click'].forEach(ev=>document.addEventListener(ev,e=>{const t=e.target.closest&&e.target.closest('.tip');if(t)placeTip(t);},true));
 /* Tooltips: Escape hides one until the pointer or focus leaves; a tap elsewhere closes a tapped-open one. */
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.tip').forEach(t=>{t.classList.remove('open');t.dataset.hush=1;});});
 document.addEventListener('click',e=>document.querySelectorAll('.tip.open').forEach(t=>{if(!t.contains(e.target))t.classList.remove('open');}));

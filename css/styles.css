@@ -113,15 +113,41 @@ button.dk:hover{border-color:var(--lilac)}
 .fb.info{background:var(--surf);border:2px solid var(--lilac)}
 .result{text-align:center}.bigstars{font-size:3.4rem;color:var(--star);letter-spacing:6px}.bigstars span{color:var(--line)}
 .result .navrow{justify-content:center}
+/* bottom sheet (touch screens) */
+.sheet{position:fixed;inset:auto 0 0;margin:0;width:100%;max-width:640px;margin-inline:auto;max-height:88vh;overflow:auto;border:0;
+ border-radius:24px 24px 0 0;padding:14px 22px calc(22px + env(safe-area-inset-bottom,0px));background:var(--surf);color:var(--ink);
+ box-shadow:0 -8px 30px rgb(0 0 0/.25);font-size:1rem;line-height:1.5}
+.sheet::backdrop{background:rgb(10 12 40/.55)}
+.sheet[open]{animation:sheet-in .28s cubic-bezier(.2,.8,.2,1)}
+.sheet[open]::backdrop{animation:fade-in .28s}
+@keyframes sheet-in{from{transform:translateY(100%)}}@keyframes fade-in{from{opacity:0}}
+.sheet-grip{width:44px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 10px}
+.sheet h2{font-size:1.3rem;margin:4px 44px 6px 0}
+.sheet-x{position:absolute;top:12px;right:12px;width:44px;height:44px;border-radius:50%;font-size:1.1rem;color:var(--soft)}
+.sheet-x:hover{background:var(--bg)}
+.sheet .tip-h{font-size:1.05rem;margin:18px 0 6px}
+.sheet .tip-ol{display:block;margin:0;padding-left:1.4em}.sheet .tip-ol li{margin:3px 0}
+.sheet .tip-ex{font-size:.92rem;padding:8px 12px;margin:8px 0 0}
+.sheet .tip-end{margin:16px 0 0}
+.sheet-ok{width:100%;margin-top:18px}
 /* info tooltip */
-.tip-btn{width:26px;height:26px;border-radius:50%;border:2px solid var(--edge);font:800 .85rem/1 var(--display);color:var(--soft);display:grid;place-items:center;margin-left:-4px}
+.tip-btn{position:relative;width:26px;height:26px;border-radius:50%;border:2px solid var(--edge);font:800 .85rem/1 var(--display);color:var(--soft);display:grid;place-items:center;margin-left:-4px}
 .tip-btn:hover,.tip.open .tip-btn{border-color:var(--lilac);color:var(--lilac)}
-.tip-box{position:absolute;z-index:5;top:calc(100% + 10px);left:50%;translate:-50% 0;width:min(320px,calc(100vw - 32px));
+.tip-box{position:absolute;z-index:5;top:calc(100% + 10px);left:50%;translate:-50% 0;width:min(340px,calc(100vw - 32px));
  background:var(--surf);color:var(--ink);border:2px solid var(--edge);border-radius:14px;padding:12px 14px;box-shadow:0 8px 24px rgb(0 0 0/.18);
  font-size:.88rem;font-weight:400;line-height:1.45;text-align:left;visibility:hidden;opacity:0;transition:opacity .15s}
+.tip-btn::after{content:"";position:absolute;inset:-9px}
+.tip-h{display:block;margin:10px 0 4px;font-family:var(--display);font-weight:600;font-size:.95rem}
+.tip-ol{display:flex;flex-direction:column}
+.tip-ex{display:block;margin-top:6px;padding:6px 8px;border-radius:8px;background:var(--bg);font-size:.82rem;color:var(--soft)}
+.tip-ex b{color:var(--ink)}
+.tip-end{display:block;margin-top:10px;font-weight:700}
 .tip-box::before{content:"";position:absolute;inset:-24px 0 auto;height:24px}
-.tip:hover .tip-box,.tip:focus-within .tip-box,.tip.open .tip-box{visibility:visible;opacity:1}
-.tip[data-hush] .tip-box{visibility:hidden;opacity:0}
+.tip.open .tip-box,.tip:has(.tip-btn:focus-visible) .tip-box{visibility:visible;opacity:1}
+@media (hover:hover){.tip:hover .tip-box{visibility:visible;opacity:1}}
+.tip.tip[data-hush] .tip-box{visibility:hidden;opacity:0}
+.tip.up .tip-box{top:auto;bottom:calc(100% + 10px)}
+.tip.up .tip-box::before{inset:auto 0 -24px}
 kbd{font:800 .85em var(--body);background:var(--surf);border:2px solid var(--edge);border-bottom-width:3px;border-radius:6px;padding:0 6px}
 .kbd{display:none;text-align:center;margin:-4px 0 12px}
 .result .kbd{margin:16px 0 0}
@@ -164,3 +190,5 @@ kbd{font:800 .85em var(--body);background:var(--surf);border:2px solid var(--edg
  .choices{margin:0}
  .bar{max-width:none;margin-bottom:28px}
 }
+/* touch screens use the bottom sheet, never the tooltip */
+@media not ((hover:hover) and (pointer:fine)){.tip-box{display:none}}
